@@ -1,0 +1,6 @@
+{
+  "name": "AIQX — Solana Community Earning & Token Adoption Platform",
+  "description": "Institutional-grade Solana Web3 platform for AIQX token adoption through automated 3-level referral distribution, on-chain SPL verification, and community marketing rewards.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}

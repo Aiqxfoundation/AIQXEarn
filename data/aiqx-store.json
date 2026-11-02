@@ -1,0 +1,98 @@
+{
+  "users": {
+    "AiqxRoot11111111111111111111111111111111111": {
+      "wallet": "AiqxRoot11111111111111111111111111111111111",
+      "upline1": null,
+      "upline2": null,
+      "upline3": null,
+      "joinTime": "2025-01-01T00:00:00.000Z",
+      "joinSignature": "GENESIS_BOOTSTRAP_INITIAL_SIGNATURE"
+    },
+    "User111111111111111111111111111111111111111": {
+      "wallet": "User111111111111111111111111111111111111111",
+      "upline1": "AiqxRoot11111111111111111111111111111111111",
+      "upline2": null,
+      "upline3": null,
+      "joinTime": "2026-11-02T22:13:37.392Z",
+      "joinSignature": "devnet_sig_123456789_abcdef"
+    },
+    "User222222222222222222222222222222222222222": {
+      "wallet": "User222222222222222222222222222222222222222",
+      "upline1": "User111111111111111111111111111111111111111",
+      "upline2": "AiqxRoot11111111111111111111111111111111111",
+      "upline3": null,
+      "joinTime": "2026-11-02T22:14:00.503Z",
+      "joinSignature": "devnet_sig_user2_join_9999999"
+    }
+  },
+  "earnings": [
+    {
+      "id": "devnet_sig_123456789_abcdef_l1",
+      "wallet": "AiqxRoot11111111111111111111111111111111111",
+      "sourceWallet": "User111111111111111111111111111111111111111",
+      "level": 1,
+      "amount": 50,
+      "transactionSignature": "devnet_sig_123456789_abcdef",
+      "timestamp": "2026-11-02T22:13:37.392Z",
+      "category": "l1_reward"
+    },
+    {
+      "id": "devnet_sig_user2_join_9999999_l1",
+      "wallet": "User111111111111111111111111111111111111111",
+      "sourceWallet": "User222222222222222222222222222222222222222",
+      "level": 1,
+      "amount": 50,
+      "transactionSignature": "devnet_sig_user2_join_9999999",
+      "timestamp": "2026-11-02T22:14:00.503Z",
+      "category": "l1_reward"
+    },
+    {
+      "id": "devnet_sig_user2_join_9999999_l2",
+      "wallet": "AiqxRoot11111111111111111111111111111111111",
+      "sourceWallet": "User222222222222222222222222222222222222222",
+      "level": 2,
+      "amount": 30,
+      "transactionSignature": "devnet_sig_user2_join_9999999",
+      "timestamp": "2026-11-02T22:14:00.503Z",
+      "category": "l2_reward"
+    }
+  ],
+  "systemPool": [
+    {
+      "id": "devnet_sig_123456789_abcdef_pool",
+      "sourceWallet": "User111111111111111111111111111111111111111",
+      "fixedAmount": 15,
+      "l2ReserveAmount": 30,
+      "l3ReserveAmount": 5,
+      "totalAmount": 50,
+      "transactionSignature": "devnet_sig_123456789_abcdef",
+      "timestamp": "2026-11-02T22:13:37.392Z"
+    },
+    {
+      "id": "devnet_sig_user2_join_9999999_pool",
+      "sourceWallet": "User222222222222222222222222222222222222222",
+      "fixedAmount": 15,
+      "l2ReserveAmount": 0,
+      "l3ReserveAmount": 5,
+      "totalAmount": 20,
+      "transactionSignature": "devnet_sig_user2_join_9999999",
+      "timestamp": "2026-11-02T22:14:00.503Z"
+    }
+  ],
+  "processedSignatures": {
+    "devnet_sig_123456789_abcdef": {
+      "signature": "devnet_sig_123456789_abcdef",
+      "senderWallet": "User111111111111111111111111111111111111111",
+      "amount": 100,
+      "status": "confirmed",
+      "createdAt": "2026-11-02T22:13:37.392Z"
+    },
+    "devnet_sig_user2_join_9999999": {
+      "signature": "devnet_sig_user2_join_9999999",
+      "senderWallet": "User222222222222222222222222222222222222222",
+      "amount": 100,
+      "status": "confirmed",
+      "createdAt": "2026-11-02T22:14:00.503Z"
+    }
+  }
+}
