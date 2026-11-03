@@ -139,9 +139,9 @@ export class SolanaVerifier {
       return {
         success: true,
         txDetails: {
-          slot: tx.slot,
-          blockTime: tx.blockTime,
-          fee: tx.meta?.fee || 5000,
+          slot: Number(tx.slot),
+          blockTime: tx.blockTime != null ? Number(tx.blockTime) : null,
+          fee: tx.meta?.fee != null ? Number(tx.meta.fee) : 5000,
         },
       };
     } catch (err: any) {

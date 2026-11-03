@@ -11,8 +11,17 @@ import {
   ExternalLink,
   CheckCircle2,
   Lock,
+  ArrowDownUp,
+  Zap,
 } from 'lucide-react';
-import { AppConfig, getExplorerUrl, formatAddress } from '../lib/solana';
+import {
+  AppConfig,
+  getExplorerUrl,
+  formatAddress,
+  RAYDIUM_SWAP_BUY_URL,
+  DEXSCREENER_URL,
+  GECKOTERMINAL_URL,
+} from '../lib/solana';
 
 interface LandingHeroProps {
   config: AppConfig;
@@ -24,6 +33,7 @@ interface LandingHeroProps {
   } | null;
   onExploreClick: () => void;
   onDashboardClick: () => void;
+  onDexClick?: () => void;
 }
 
 export const LandingHero: FC<LandingHeroProps> = ({
@@ -31,6 +41,7 @@ export const LandingHero: FC<LandingHeroProps> = ({
   stats,
   onExploreClick,
   onDashboardClick,
+  onDexClick,
 }) => {
   const { connected } = useWallet();
   const { setVisible } = useWalletModal();
@@ -39,6 +50,20 @@ export const LandingHero: FC<LandingHeroProps> = ({
     <div className="space-y-16 py-8 sm:py-12">
       {/* Hero Section */}
       <section className="text-center max-w-4xl mx-auto px-4">
+        {/* Official Coin Logo Emblem */}
+        <div className="flex justify-center mb-6">
+          <div className="relative w-24 h-24 sm:w-28 sm:h-28 rounded-full p-1 bg-gradient-to-tr from-[#F5A623] via-[#e59917] to-amber-600 shadow-[0_0_35px_rgba(245,166,35,0.4)] animate-in fade-in zoom-in duration-500">
+            <img
+              src="/aiqx-logo.png"
+              alt="Official AIQX Token"
+              className="w-full h-full rounded-full object-cover bg-black"
+            />
+            <div className="absolute -bottom-1 -right-1 px-2 py-0.5 rounded-full bg-[#11161E] border border-[#F5A623] text-[10px] font-mono font-bold text-[#F5A623]">
+              SPL
+            </div>
+          </div>
+        </div>
+
         <div className="inline-flex items-center space-x-2 px-3 py-1 rounded-full bg-[#11161E] border border-[#1E2533] text-xs font-mono text-[#F5A623] mb-6">
           <span className="w-1.5 h-1.5 rounded-full bg-[#F5A623]" />
           <span>Solana SPL Token Adoption Protocol</span>
@@ -71,6 +96,16 @@ export const LandingHero: FC<LandingHeroProps> = ({
             >
               <Wallet className="w-4 h-4" />
               <span>Connect Wallet</span>
+            </button>
+          )}
+
+          {onDexClick && (
+            <button
+              onClick={onDexClick}
+              className="w-full sm:w-auto px-8 py-3.5 rounded-lg bg-[#171D27] hover:bg-[#1E2533] text-white border border-[#2D3648] hover:border-[#F5A623] font-semibold text-base transition-all flex items-center justify-center space-x-2 cursor-pointer"
+            >
+              <ArrowDownUp className="w-4 h-4 text-[#F5A623]" />
+              <span>Buy / Sell AIQX</span>
             </button>
           )}
 
@@ -267,7 +302,7 @@ export const LandingHero: FC<LandingHeroProps> = ({
             <div className="p-3.5 rounded-lg bg-[#0B0E11]/70 border border-[#1E2533]">
               <div className="text-xs text-[#8B949E]">Network</div>
               <div className="text-base font-bold text-white mt-1">
-                {config.network === 'mainnet-beta' ? 'Solana Mainnet' : 'Solana Devnet'}
+                Solana Mainnet
               </div>
             </div>
             <div className="p-3.5 rounded-lg bg-[#0B0E11]/70 border border-[#1E2533]">
@@ -286,23 +321,46 @@ export const LandingHero: FC<LandingHeroProps> = ({
             </div>
           </div>
 
-          {/* Mint Address Row */}
-          <div className="mt-4 pt-4 border-t border-[#1E2533] flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-xs">
-            <div className="flex items-center space-x-2 text-[#8B949E]">
-              <span className="font-semibold text-white">Token Mint:</span>
-              <span className="font-mono text-[#E6EDF3] bg-[#0B0E11] px-2 py-1 rounded border border-[#1E2533]">
+          {/* Mint Address Row & Direct DEX Links */}
+          <div className="mt-5 pt-4 border-t border-[#1E2533] flex flex-col lg:flex-row lg:items-center justify-between gap-4 text-xs">
+            <div className="flex flex-wrap items-center gap-2 text-[#8B949E]">
+              <span className="font-semibold text-white">Contract / Mint Address:</span>
+              <span className="font-mono text-[#E6EDF3] bg-[#0B0E11] px-2.5 py-1 rounded border border-[#1E2533] select-all">
                 {config.tokenMint}
               </span>
             </div>
-            <a
-              href={getExplorerUrl(config.tokenMint, 'address', config.network)}
-              target="_blank"
-              rel="noreferrer"
-              className="inline-flex items-center space-x-1 text-[#F5A623] hover:underline"
-            >
-              <span>View On Solana Explorer</span>
-              <ExternalLink className="w-3.5 h-3.5" />
-            </a>
+
+            <div className="flex items-center space-x-3">
+              <a
+                href={RAYDIUM_SWAP_BUY_URL}
+                target="_blank"
+                rel="noreferrer"
+                className="inline-flex items-center space-x-1 text-[#F5A623] hover:underline font-mono"
+              >
+                <span>Raydium Swap</span>
+                <ExternalLink className="w-3.5 h-3.5" />
+              </a>
+              <span className="text-[#2D3648]">•</span>
+              <a
+                href={DEXSCREENER_URL}
+                target="_blank"
+                rel="noreferrer"
+                className="inline-flex items-center space-x-1 text-[#F5A623] hover:underline font-mono"
+              >
+                <span>DexScreener</span>
+                <ExternalLink className="w-3.5 h-3.5" />
+              </a>
+              <span className="text-[#2D3648]">•</span>
+              <a
+                href={getExplorerUrl(config.tokenMint, 'address', 'mainnet-beta')}
+                target="_blank"
+                rel="noreferrer"
+                className="inline-flex items-center space-x-1 text-white hover:text-[#F5A623] font-mono"
+              >
+                <span>Solana Explorer</span>
+                <ExternalLink className="w-3.5 h-3.5" />
+              </a>
+            </div>
           </div>
         </div>
       </section>

@@ -9,6 +9,7 @@ import {
   Award,
   Clock,
   ArrowUpRight,
+  ArrowRight,
   TrendingUp,
   Share2,
   ShieldCheck,
@@ -42,6 +43,7 @@ interface DashboardProps {
   aiqxBalance: number;
   solBalance: number;
   onRefresh: () => void;
+  onGoToDex?: () => void;
 }
 
 export const Dashboard: FC<DashboardProps> = ({
@@ -52,6 +54,7 @@ export const Dashboard: FC<DashboardProps> = ({
   aiqxBalance,
   solBalance,
   onRefresh,
+  onGoToDex,
 }) => {
   const { publicKey } = useWallet();
   const [copiedLink, setCopiedLink] = useState(false);
@@ -78,7 +81,7 @@ export const Dashboard: FC<DashboardProps> = ({
   };
 
   return (
-    <div className="space-y-8 max-w-6xl mx-auto px-4 py-8">
+    <div className="space-y-6 max-w-6xl mx-auto py-2">
       {/* Top Banner / Welcome */}
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 p-6 rounded-xl bg-[#11161E] border border-[#1E2533]">
         <div className="space-y-1">
@@ -144,11 +147,22 @@ export const Dashboard: FC<DashboardProps> = ({
               </div>
 
               <div className="grid grid-cols-2 gap-3">
-                <div className="p-3 rounded-lg bg-[#0B0E11] border border-[#1E2533]">
-                  <span className="text-xs text-[#8B949E] block">AIQX Token Balance</span>
-                  <span className="text-xl font-bold font-mono text-white mt-1 block">
-                    {aiqxBalance.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
-                  </span>
+                <div className="p-3 rounded-lg bg-[#0B0E11] border border-[#1E2533] flex flex-col justify-between">
+                  <div>
+                    <span className="text-xs text-[#8B949E] block">AIQX Token Balance</span>
+                    <span className="text-xl font-bold font-mono text-white mt-1 block">
+                      {aiqxBalance.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                    </span>
+                  </div>
+                  {onGoToDex && (
+                    <button
+                      onClick={onGoToDex}
+                      className="mt-2 text-[11px] font-mono text-[#F5A623] hover:underline flex items-center space-x-1 cursor-pointer"
+                    >
+                      <span>Buy / Sell on DEX</span>
+                      <ArrowRight className="w-3 h-3" />
+                    </button>
+                  )}
                 </div>
                 <div className="p-3 rounded-lg bg-[#0B0E11] border border-[#1E2533]">
                   <span className="text-xs text-[#8B949E] block">SOL Fee Balance</span>

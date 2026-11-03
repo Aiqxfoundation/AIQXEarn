@@ -18,7 +18,7 @@ export const SystemPoolSection: FC<SystemPoolSectionProps> = ({
   const l3 = poolData?.level3Reserve || 0;
 
   return (
-    <div className="space-y-8 max-w-6xl mx-auto px-4 py-8">
+    <div className="space-y-6 max-w-6xl mx-auto py-2">
       {/* Header */}
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 p-6 rounded-xl bg-[#11161E] border border-[#1E2533]">
         <div className="space-y-1">

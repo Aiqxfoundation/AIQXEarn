@@ -28,8 +28,11 @@ interface JoinSectionProps {
   initialReferral?: string;
   aiqxBalance: number;
   solBalance: number;
+  isRegistered?: boolean;
   onJoinSuccess: () => void;
   onRefreshBalances: () => void;
+  onGoToDex?: () => void;
+  onGoToDashboard?: () => void;
 }
 
 export const JoinSection: FC<JoinSectionProps> = ({
@@ -37,8 +40,11 @@ export const JoinSection: FC<JoinSectionProps> = ({
   initialReferral = '',
   aiqxBalance,
   solBalance,
+  isRegistered = false,
   onJoinSuccess,
   onRefreshBalances,
+  onGoToDex,
+  onGoToDashboard,
 }) => {
   const { publicKey, sendTransaction } = useWallet();
   const { connection } = useConnection();
@@ -277,6 +283,30 @@ export const JoinSection: FC<JoinSectionProps> = ({
         </div>
       </div>
 
+      {/* Already Registered Status Banner */}
+      {isRegistered && (
+        <div className="p-4 rounded-lg bg-emerald-950/30 border border-emerald-800/40 mb-6 flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-xs">
+          <div className="flex items-center space-x-2.5">
+            <CheckCircle className="w-5 h-5 text-emerald-400 shrink-0" />
+            <div>
+              <span className="font-bold text-white block">Wallet Already Registered & Active</span>
+              <span className="text-[#8B949E]">
+                This wallet is active in the 3-tier matrix. You can view your tree and earnings in the Dashboard.
+              </span>
+            </div>
+          </div>
+          {onGoToDashboard && (
+            <button
+              type="button"
+              onClick={onGoToDashboard}
+              className="px-3.5 py-1.5 rounded-lg bg-[#F5A623] hover:bg-[#e59917] text-[#0B0E11] font-bold text-xs shrink-0 cursor-pointer transition-colors shadow-sm"
+            >
+              Go to Dashboard →
+            </button>
+          )}
+        </div>
+      )}
+
       {/* Connected Wallet Identity */}
       <div className="p-4 rounded-lg bg-[#0B0E11] border border-[#1E2533] mb-6 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
         <div>
@@ -285,7 +315,7 @@ export const JoinSection: FC<JoinSectionProps> = ({
             {publicKey ? publicKey.toBase58() : 'No wallet connected'}
           </span>
         </div>
-        <div className="flex items-center space-x-4 text-xs font-mono">
+        <div className="flex items-center space-x-3 text-xs font-mono">
           <div>
             <span className="text-[#8B949E]">AIQX: </span>
             <span className={aiqxBalance >= 100 ? 'text-emerald-400 font-bold' : 'text-amber-400 font-bold'}>
@@ -298,6 +328,15 @@ export const JoinSection: FC<JoinSectionProps> = ({
               {solBalance.toFixed(4)}
             </span>
           </div>
+          {aiqxBalance < 100 && onGoToDex && (
+            <button
+              type="button"
+              onClick={onGoToDex}
+              className="px-2 py-0.5 rounded bg-[#F5A623]/20 hover:bg-[#F5A623]/30 text-[#F5A623] border border-[#F5A623]/40 text-[11px] font-bold cursor-pointer transition-colors"
+            >
+              Get AIQX
+            </button>
+          )}
         </div>
       </div>
 

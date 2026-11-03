@@ -24,15 +24,21 @@ export interface AppConfig {
   network: 'mainnet-beta' | 'devnet';
 }
 
+export const OFFICIAL_AIQX_MINT = 'AiqxkvBcvugexLRRxFXBYxT5ekcrSb9noosq3VqBTRFD';
+export const RAYDIUM_SWAP_BUY_URL = 'https://raydium.io/swap/?inputMint=sol&outputMint=AiqxkvBcvugexLRRxFXBYxT5ekcrSb9noosq3VqBTRFD';
+export const RAYDIUM_SWAP_SELL_URL = 'https://raydium.io/swap/?inputMint=AiqxkvBcvugexLRRxFXBYxT5ekcrSb9noosq3VqBTRFD&outputMint=sol';
+export const DEXSCREENER_URL = 'https://dexscreener.com/solana/AiqxkvBcvugexLRRxFXBYxT5ekcrSb9noosq3VqBTRFD';
+export const GECKOTERMINAL_URL = 'https://www.geckoterminal.com/solana/tokens/AiqxkvBcvugexLRRxFXBYxT5ekcrSb9noosq3VqBTRFD';
+
 export const DEFAULT_CONFIG: AppConfig = {
-  rpcUrl: 'https://api.devnet.solana.com',
-  tokenMint: 'AiqxMint11111111111111111111111111111111111',
+  rpcUrl: 'https://api.mainnet-beta.solana.com',
+  tokenMint: OFFICIAL_AIQX_MINT,
   systemWallet: 'SysAiqx111111111111111111111111111111111111',
   genesisWallet: 'AiqxRoot11111111111111111111111111111111111',
   totalTokenSupply: 4500000,
   decimals: 6,
   joiningFee: 100,
-  network: 'devnet',
+  network: 'mainnet-beta',
 };
 
 /**
@@ -49,7 +55,7 @@ export function formatAddress(address: string, chars = 4): string {
  */
 export function getExplorerUrl(
   identifier: string,
-  type: 'tx' | 'address',
+  type: 'tx' | 'address' | 'token' = 'address',
   network: 'mainnet-beta' | 'devnet' = 'devnet'
 ): string {
   const base = `https://explorer.solana.com/${type}/${identifier}`;
@@ -66,7 +72,7 @@ export async function fetchSolBalance(
   try {
     const pubkey = new PublicKey(walletAddress);
     const balance = await connection.getBalance(pubkey);
-    return balance / LAMPORTS_PER_SOL;
+    return Number(balance) / LAMPORTS_PER_SOL;
   } catch (err) {
     console.warn('[Solana] Failed to fetch SOL balance:', err);
     return 0;
