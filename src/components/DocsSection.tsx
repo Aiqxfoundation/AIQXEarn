@@ -53,7 +53,7 @@ export const DocsSection: FC<DocsSectionProps> = ({
 
   const docSections = [
     { id: 'manifesto', label: '1. Manifesto & Protocol', icon: ShieldCheck },
-    { id: 'matrix-math', label: '2. 14-Level Doubling Math', icon: Layers },
+    { id: 'matrix-math', label: '2. 12-Slot Independent System', icon: Layers },
     { id: 'id-system', label: '3. Permanent Sequential IDs', icon: Users },
     { id: 'distribution', label: '4. Joining & Distribution', icon: Coins },
     { id: 'treasury', label: '5. Treasury Policy', icon: Lock },
@@ -179,8 +179,8 @@ export const DocsSection: FC<DocsSectionProps> = ({
                     <div className="text-sm font-bold text-emerald-400">4,500,000 AIQX</div>
                   </div>
                   <div className="p-4 rounded-xl bg-[#0B0E14] border border-[#1A2230] space-y-1">
-                    <span className="text-[10px] font-mono text-[#8B949E] uppercase">Doubling Program</span>
-                    <div className="text-sm font-bold text-blue-400">14 Levels</div>
+                    <span className="text-[10px] font-mono text-[#8B949E] uppercase">Slots Program</span>
+                    <div className="text-sm font-bold text-blue-400">12 Independent Slots</div>
                   </div>
                 </div>
               </div>
@@ -190,9 +190,9 @@ export const DocsSection: FC<DocsSectionProps> = ({
             {activeDocTab === 'matrix-math' && (
               <div className="space-y-4">
                 <div className="border-b border-[#1E2533] pb-4">
-                  <h2 className="text-xl font-bold text-white">2. 14-Level Doubling Matrix Mathematics</h2>
+                  <h2 className="text-xl font-bold text-white">2. 12-Slot Independent Matrix Mathematics</h2>
                   <p className="text-xs text-[#8B949E] mt-1">
-                    Each level doubles the previous level’s capacity, commission allocation, and slot activation fee.
+                    Pure slot-based system: No levels. Every slot is higher than before (doubling fees from 100 to 204,800 AIQX). Everyone earns under identical opportunities.
                   </p>
                 </div>
 
@@ -200,34 +200,37 @@ export const DocsSection: FC<DocsSectionProps> = ({
                   <table className="w-full text-left text-xs font-mono">
                     <thead className="bg-[#171D27] text-[#8B949E] text-[11px] uppercase border-b border-[#1E2533]">
                       <tr>
-                        <th className="py-2.5 px-3">Level</th>
-                        <th className="py-2.5 px-3">Slots</th>
-                        <th className="py-2.5 px-3">Direct (50%)</th>
-                        <th className="py-2.5 px-3">Indirect (30%)</th>
-                        <th className="py-2.5 px-3">3rd Line (5%)</th>
-                        <th className="py-2.5 px-3">Slot Fee (15%)</th>
+                        <th className="py-2.5 px-3">Slot</th>
+                        <th className="py-2.5 px-3">Direct Spots</th>
+                        <th className="py-2.5 px-3">Recycling Spots</th>
+                        <th className="py-2.5 px-3">Total Capacity</th>
+                        <th className="py-2.5 px-3">Direct Reward</th>
                         <th className="py-2.5 px-3 text-right">Package Fee</th>
                       </tr>
                     </thead>
                     <tbody className="divide-y divide-[#1A2230] text-[#E6EDF3]">
-                      {MATRIX_LEVELS_CONFIG.map((lvl) => (
-                        <tr key={lvl.level} className="hover:bg-[#141A24]">
-                          <td className="py-2 px-3 font-bold text-blue-400">L{lvl.level}</td>
-                          <td className="py-2 px-3">{lvl.slots.toLocaleString()}</td>
-                          <td className="py-2 px-3 text-emerald-400">{lvl.directReward.toLocaleString()}</td>
-                          <td className="py-2 px-3 text-purple-400">{lvl.indirectReward.toLocaleString()}</td>
-                          <td className="py-2 px-3 text-amber-400">{lvl.thirdLineReward.toLocaleString()}</td>
-                          <td className="py-2 px-3 text-[#F5A623]">{lvl.slotActivationFee.toLocaleString()}</td>
-                          <td className="py-2 px-3 text-right font-bold">{lvl.totalPackageFee.toLocaleString()} AIQX</td>
+                      {MATRIX_LEVELS_CONFIG.map((s) => (
+                        <tr key={s.slot} className="hover:bg-[#141A24]">
+                          <td className="py-2 px-3 font-bold text-blue-400">Slot {s.slot}</td>
+                          <td className="py-2 px-3 text-emerald-400 font-bold">{s.directSpots} Direct</td>
+                          <td className="py-2 px-3 text-cyan-400 font-bold">1 Recycling</td>
+                          <td className="py-2 px-3">{s.slots} Spots</td>
+                          <td className="py-2 px-3 text-emerald-400">+{s.directReward.toLocaleString()} AIQX</td>
+                          <td className="py-2 px-3 text-right font-bold text-[#F5A623]">{s.totalPackageFee.toLocaleString()} AIQX</td>
                         </tr>
                       ))}
                     </tbody>
                   </table>
                 </div>
 
-                <p className="text-xs text-[#8B949E] leading-relaxed">
-                  * All calculations are executed in raw integer units (6 token decimals). Every distribution is strictly backed by available on-chain liquidity.
-                </p>
+                <div className="p-4 rounded-xl bg-[#0B0E14] border border-[#1A2332] space-y-2 text-xs text-[#8B949E]">
+                  <p>
+                    <strong className="text-white">Recycling Logic (Exact):</strong> When the final recycling spot is filled, the slot recycles: 50% to nearest qualified upline (crossover enabled), 10% to Treasury, and 40% distributed across the user’s top 3 downline leaders (20%, 12%, 8%). A fresh cycle opens of the same slot!
+                  </p>
+                  <p>
+                    <strong className="text-white">Total Team Topology:</strong> Modeled after 1 Leader → 3 Direct Partners → 9 Downline Members.
+                  </p>
+                </div>
               </div>
             )}
 

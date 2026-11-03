@@ -108,14 +108,14 @@ export const ForsageSlotCard: FC<ForsageSlotCardProps> = ({
             <div>
               <div className="flex items-center space-x-1.5">
                 <span className="text-xs font-bold text-white tracking-wide">
-                  LEVEL {config.level}
+                  SLOT {config.level < 10 ? `0${config.level}` : config.level}
                 </span>
                 {isUnlocked && (
                   <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
                 )}
               </div>
               <div className="text-[10px] text-[#8B949E] font-mono">
-                {config.slots.toLocaleString()} {config.slots === 1 ? 'Slot' : 'Slots'} Capacity
+                {config.directSpots || config.slots - 1} Direct + 1 Recycle ({config.slots} Spots)
               </div>
             </div>
           </div>
@@ -268,9 +268,9 @@ export const ForsageSlotCard: FC<ForsageSlotCardProps> = ({
               e.stopPropagation();
               onInspect(config.level);
             }}
-            className="w-full py-2.5 px-3 rounded-xl bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-400 border border-emerald-500/25 text-xs font-bold transition-all flex items-center justify-center space-x-1.5 cursor-pointer shadow-[0_2px_12px_rgba(16,185,129,0.1)]"
+            className="w-full py-2.5 px-3 rounded-xl bg-blue-600/15 hover:bg-blue-600/25 text-blue-400 border border-blue-500/30 text-xs font-bold transition-all flex items-center justify-center space-x-1.5 cursor-pointer shadow-[0_2px_12px_rgba(37,99,235,0.12)]"
           >
-            <CheckCircle2 className="w-3.5 h-3.5" />
+            <CheckCircle2 className="w-3.5 h-3.5 text-blue-400" />
             <span>Active • Inspect Matrix</span>
           </button>
         ) : isNextInLine ? (
@@ -281,9 +281,9 @@ export const ForsageSlotCard: FC<ForsageSlotCardProps> = ({
               onActivate(config);
             }}
             disabled={!connected}
-            className="w-full py-2.5 px-3 rounded-xl bg-[#F5A623] hover:bg-[#e59917] disabled:bg-[#1A2230] disabled:text-[#6E7681] text-[#0B0E11] text-xs font-extrabold transition-all flex items-center justify-center space-x-1.5 shadow-[0_4px_16px_rgba(245,166,35,0.3)] cursor-pointer"
+            className="w-full py-2.5 px-3 rounded-xl bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-500 hover:to-indigo-500 disabled:opacity-50 text-white text-xs font-extrabold transition-all flex items-center justify-center space-x-1.5 shadow-[0_4px_16px_rgba(37,99,235,0.35)] cursor-pointer"
           >
-            <span>Activate L{config.level} ({config.totalPackageFee.toLocaleString()} AIQX)</span>
+            <span>Upgrade {config.totalPackageFee.toLocaleString()} AIQX</span>
             <ArrowUpRight className="w-3.5 h-3.5" />
           </button>
         ) : (
@@ -293,7 +293,7 @@ export const ForsageSlotCard: FC<ForsageSlotCardProps> = ({
             className="w-full py-2.5 px-3 rounded-xl bg-[#121721] text-[#6E7681] border border-[#1E2736] text-xs font-semibold flex items-center justify-center space-x-1.5 cursor-not-allowed"
           >
             <Lock className="w-3.5 h-3.5 text-[#4A5568]" />
-            <span>Locked (Upgrade L{config.level - 1} First)</span>
+            <span>Locked (Activate Slot {config.level - 1} First)</span>
           </button>
         )}
       </div>

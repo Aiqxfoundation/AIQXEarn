@@ -40,7 +40,7 @@ const IS_DEV = process.env.NODE_ENV !== 'production';
 const db: AppDatabase = getDatabase();
 const verifier = new SolanaVerifier(RPC_URL, TOKEN_MINT, TREASURY_WALLET);
 
-// Ensure Genesis user exists in DB with ID 1 and all 14 active levels
+// Ensure Genesis user exists in DB with ID 1 and all 12 active slots
 (async () => {
   try {
     const genesis = await db.getUser(GENESIS_WALLET);
@@ -55,7 +55,7 @@ const verifier = new SolanaVerifier(RPC_URL, TOKEN_MINT, TREASURY_WALLET);
         upline3: null,
         joinTime: new Date('2025-01-01T00:00:00Z').toISOString(),
         joinSignature: 'GENESIS_BOOTSTRAP_INITIAL_SIGNATURE',
-        activeLevels: Array.from({ length: 14 }, (_, i) => i + 1),
+        activeLevels: Array.from({ length: 12 }, (_, i) => i + 1),
       });
       console.log(`[AIQX Init] Genesis Root wallet registered (ID 1): ${GENESIS_WALLET}`);
     }
@@ -67,7 +67,7 @@ const verifier = new SolanaVerifier(RPC_URL, TOKEN_MINT, TREASURY_WALLET);
 // API: Public Config
 app.get('/api/config', (req: Request, res: Response) => {
   res.json({
-    programName: 'AIQX Matrix X',
+    programName: 'AIQX Independent Slots Matrix',
     rpcUrl: RPC_URL,
     tokenMint: TOKEN_MINT,
     treasuryWallet: TREASURY_WALLET,
@@ -76,7 +76,8 @@ app.get('/api/config', (req: Request, res: Response) => {
     totalTokenSupply: 4500000,
     decimals: 6,
     joiningFee: 100,
-    totalLevels: 14,
+    totalSlots: 12,
+    totalLevels: 12,
     network: RPC_URL.includes('mainnet') ? 'mainnet-beta' : 'devnet',
   });
 });
@@ -91,7 +92,8 @@ app.get('/api/stats', async (req: Request, res: Response) => {
         totalRegisteredUsers: stats.totalUsers,
         totalAiqxDistributed: stats.totalDistributed,
         totalSupply: 4500000,
-        totalLevels: 14,
+        totalSlots: 12,
+        totalLevels: 12,
         network: RPC_URL.includes('mainnet') ? 'Solana Mainnet' : 'Solana Devnet',
         systemPool: stats.systemPool,
         treasuryWallet: TREASURY_WALLET,
@@ -103,16 +105,20 @@ app.get('/api/stats', async (req: Request, res: Response) => {
   }
 });
 
-// API: 14-Level Matrix Specifications Table
-app.get('/api/matrix/levels', (req: Request, res: Response) => {
+// API: 12-Slot Independent Matrix Specifications Table
+const getSlotsHandler = (req: Request, res: Response) => {
   res.json({
     success: true,
-    program: 'AIQX Matrix X',
-    totalLevels: 14,
+    program: 'AIQX Independent Slots Matrix',
+    totalSlots: 12,
+    totalLevels: 12,
     treasuryWallet: TREASURY_WALLET,
+    slots: MATRIX_LEVELS_CONFIG,
     levels: MATRIX_LEVELS_CONFIG,
   });
-});
+};
+app.get('/api/matrix/levels', getSlotsHandler);
+app.get('/api/matrix/slots', getSlotsHandler);
 
 // API: Member Matrix Status (by ID or Wallet)
 app.get('/api/matrix/member/:idOrWallet', async (req: Request, res: Response) => {
@@ -129,7 +135,7 @@ app.get('/api/matrix/member/:idOrWallet', async (req: Request, res: Response) =>
 
     const activeLevels = user.activeLevels || [1];
     const currentMaxLevel = Math.max(...activeLevels, 1);
-    const nextLevel = currentMaxLevel < 14 ? currentMaxLevel + 1 : null;
+    const nextLevel = currentMaxLevel < 12 ? currentMaxLevel + 1 : null;
     const nextConfig = nextLevel ? getMatrixLevelConfig(nextLevel) : null;
 
     res.json({
@@ -196,7 +202,83 @@ app.get('/api/matrix/tree/:idOrWallet', async (req: Request, res: Response) => {
   }
 });
 
-// API: Forsage-Style Slot Detail for specific Level (Tree & Occupants)
+// API: Full Picture of Total Team (Structured 3-Wide Hierarchy matching Topology Blueprint)
+app.get('/api/team/picture/:idOrWallet', async (req: Request, res: Response) => {
+  try {
+    const idOrWallet = req.params.idOrWallet;
+    const rootUser = await db.getUserByWalletOrId(idOrWallet);
+    if (!rootUser) {
+      return res.status(404).json({ success: false, error: 'Member not found' });
+    }
+
+    const allUsers = await db.getAllUsers();
+    
+    // Gen 1: Direct partners
+    const directPartners = allUsers.filter(
+      (u) => u.sponsorId === rootUser.id || u.upline1 === rootUser.wallet
+    );
+
+    // Build 3-wide tree structure matching the user's diagram
+    const treePartners = directPartners.map((partner) => {
+      // Sub-downline under this direct partner
+      const subDownlines = allUsers.filter(
+        (u) => u.sponsorId === partner.id || u.upline1 === partner.wallet
+      );
+
+      return {
+        id: partner.id,
+        wallet: partner.wallet,
+        sponsorId: partner.sponsorId,
+        joinTime: partner.joinTime,
+        activeLevels: partner.activeLevels || [1],
+        maxActiveSlot: Math.max(...(partner.activeLevels || [1])),
+        subDownlines: subDownlines.map((sub) => ({
+          id: sub.id,
+          wallet: sub.wallet,
+          sponsorId: sub.sponsorId,
+          joinTime: sub.joinTime,
+          activeLevels: sub.activeLevels || [1],
+          maxActiveSlot: Math.max(...(sub.activeLevels || [1])),
+        })),
+        directSubCount: subDownlines.length,
+      };
+    });
+
+    const secondGenCount = treePartners.reduce((acc, p) => acc + p.subDownlines.length, 0);
+
+    // Find third generation members
+    const secondGenWallets = new Set(treePartners.flatMap((p) => p.subDownlines.map((s) => s.wallet)));
+    const thirdGenMembers = allUsers.filter((u) => u.upline1 && secondGenWallets.has(u.upline1));
+
+    const totalTeamCount = directPartners.length + secondGenCount + thirdGenMembers.length;
+
+    res.json({
+      success: true,
+      blueprintImageUrl: '/assets/aistudio/images__89__1b7e0220.jpeg',
+      rootUser: {
+        id: rootUser.id,
+        wallet: rootUser.wallet,
+        sponsorId: rootUser.sponsorId,
+        joinTime: rootUser.joinTime,
+        activeLevels: rootUser.activeLevels || [1],
+        maxActiveSlot: Math.max(...(rootUser.activeLevels || [1])),
+        totalTeamCount,
+        directPartnersCount: directPartners.length,
+      },
+      directPartners: treePartners,
+      metrics: {
+        totalTeamCount,
+        directCount: directPartners.length,
+        secondGenCount,
+        thirdGenCount: thirdGenMembers.length,
+      },
+    });
+  } catch (err: any) {
+    res.status(500).json({ success: false, error: err.message });
+  }
+});
+
+// API: Forsage-Style Slot Detail for specific Slot (Tree & Occupants)
 app.get('/api/matrix/slot-detail', async (req: Request, res: Response) => {
   try {
     const idOrWallet = (req.query.wallet || req.query.id) as string;
@@ -205,8 +287,8 @@ app.get('/api/matrix/slot-detail', async (req: Request, res: Response) => {
     if (!idOrWallet) {
       return res.status(400).json({ success: false, error: 'wallet or id is required' });
     }
-    if (targetLevel < 1 || targetLevel > 14) {
-      return res.status(400).json({ success: false, error: 'level must be between 1 and 14' });
+    if (targetLevel < 1 || targetLevel > 12) {
+      return res.status(400).json({ success: false, error: 'slot must be between 1 and 12' });
     }
 
     const user = await db.getUserByWalletOrId(idOrWallet);
@@ -345,8 +427,8 @@ app.post('/api/matrix/activate-level', async (req: Request, res: Response) => {
     if (!wallet || !isValidSolanaAddress(wallet)) {
       return res.status(400).json({ success: false, error: 'Valid Solana wallet address is required' });
     }
-    if (!targetLevel || targetLevel < 2 || targetLevel > 14) {
-      return res.status(400).json({ success: false, error: 'Level must be between 2 and 14' });
+    if (!targetLevel || targetLevel < 2 || targetLevel > 12) {
+      return res.status(400).json({ success: false, error: 'Slot must be between 2 and 12' });
     }
 
     const isProcessed = await db.isSignatureProcessed(signature);
@@ -464,8 +546,8 @@ app.post('/api/matrix/recycle-slot', async (req: Request, res: Response) => {
     if (!wallet || !isValidSolanaAddress(wallet)) {
       return res.status(400).json({ success: false, error: 'Valid Solana wallet address is required' });
     }
-    if (targetLevel < 1 || targetLevel > 14) {
-      return res.status(400).json({ success: false, error: 'Level must be between 1 and 14' });
+    if (targetLevel < 1 || targetLevel > 12) {
+      return res.status(400).json({ success: false, error: 'Slot must be between 1 and 12' });
     }
 
     const user = await db.getUser(wallet);
@@ -1056,7 +1138,7 @@ app.post('/api/join/verify-and-register', async (req: Request, res: Response) =>
       joinSignature: signature,
       activeLevels: [1],
       slotRecords: {
-        1: { level: 1, totalCapacity: 1, filledCount: 0, occupantIds: [], completedCycles: 0 },
+        1: { level: 1, totalCapacity: 3, filledCount: 0, occupantIds: [], completedCycles: 0 },
       },
     };
     await db.createUser(newUser);

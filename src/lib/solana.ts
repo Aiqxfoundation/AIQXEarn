@@ -29,6 +29,7 @@ export interface AppConfig {
   joiningFee: number;
   network: 'mainnet-beta' | 'devnet';
   programName?: string;
+  totalSlots?: number;
   totalLevels?: number;
 }
 
@@ -49,8 +50,9 @@ export const DEFAULT_CONFIG: AppConfig = {
   decimals: 6,
   joiningFee: 100,
   network: 'mainnet-beta',
-  programName: 'AIQX Matrix X',
-  totalLevels: 14,
+  programName: 'AIQX Independent Slots Matrix',
+  totalSlots: 12,
+  totalLevels: 12,
 };
 
 /**

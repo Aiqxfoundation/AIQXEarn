@@ -103,10 +103,10 @@ class LocalFileDatabase implements AppDatabase {
           parsed.nextUserId = maxId + 1;
         }
 
-        // Ensure Root has ID 1 and all 14 levels active
+        // Ensure Root has ID 1 and all 12 slots active
         if (parsed.users && parsed.users[GENESIS_WALLET]) {
           parsed.users[GENESIS_WALLET].id = 1;
-          parsed.users[GENESIS_WALLET].activeLevels = Array.from({ length: 14 }, (_, i) => i + 1);
+          parsed.users[GENESIS_WALLET].activeLevels = Array.from({ length: 12 }, (_, i) => i + 1);
         }
 
         return parsed;
@@ -128,9 +128,9 @@ class LocalFileDatabase implements AppDatabase {
           upline3: null,
           joinTime: new Date('2025-01-01T00:00:00Z').toISOString(),
           joinSignature: 'GENESIS_BOOTSTRAP_INITIAL_SIGNATURE',
-          activeLevels: Array.from({ length: 14 }, (_, i) => i + 1),
+          activeLevels: Array.from({ length: 12 }, (_, i) => i + 1),
           slotRecords: {
-            1: { level: 1, totalCapacity: 1, filledCount: 0, occupantIds: [], completedCycles: 0 },
+            1: { level: 1, totalCapacity: 3, filledCount: 0, occupantIds: [], completedCycles: 0 },
           },
         },
       },
@@ -237,7 +237,7 @@ class LocalFileDatabase implements AppDatabase {
     }
     if (!user.slotRecords) {
       user.slotRecords = {
-        1: { level: 1, totalCapacity: 1, filledCount: 0, occupantIds: [], completedCycles: 0 },
+        1: { level: 1, totalCapacity: 3, filledCount: 0, occupantIds: [], completedCycles: 0 },
       };
     }
 

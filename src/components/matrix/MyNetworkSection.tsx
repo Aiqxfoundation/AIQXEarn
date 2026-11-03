@@ -32,6 +32,7 @@ interface MyNetworkSectionProps {
     };
   };
   onNavigateToReferrals?: () => void;
+  onNavigateToTeamPicture?: () => void;
 }
 
 export const MyNetworkSection: FC<MyNetworkSectionProps> = ({
@@ -39,6 +40,7 @@ export const MyNetworkSection: FC<MyNetworkSectionProps> = ({
   user,
   referrals,
   onNavigateToReferrals,
+  onNavigateToTeamPicture,
 }) => {
   const { connected } = useWallet();
   const [activeTab, setActiveTab] = useState<'l1' | 'l2' | 'l3'>('l1');
@@ -80,6 +82,17 @@ export const MyNetworkSection: FC<MyNetworkSectionProps> = ({
           <p className="text-xs text-[#8B949E]">
             Immutable 3-line sponsor hierarchy &amp; automated doubling matrix placement.
           </p>
+          {onNavigateToTeamPicture && (
+            <div className="pt-1">
+              <button
+                onClick={onNavigateToTeamPicture}
+                className="inline-flex items-center space-x-1.5 px-3 py-1.5 rounded-xl bg-blue-600 hover:bg-blue-500 text-white text-xs font-bold font-mono transition-all cursor-pointer shadow-md shadow-blue-500/20"
+              >
+                <Users className="w-3.5 h-3.5" />
+                <span>Full Picture of Total Team Topology →</span>
+              </button>
+            </div>
+          )}
         </div>
 
         {user && (

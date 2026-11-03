@@ -22,13 +22,16 @@ import {
   AlertCircle,
   Loader2,
   GitBranch,
+  Settings,
+  HelpCircle,
+  Share2,
 } from 'lucide-react';
 import { AppConfig, formatAddress, getExplorerUrl } from '../lib/solana';
 import {
   UserRecord,
   EarningsRecord,
-  MATRIX_LEVELS_CONFIG,
-  MatrixLevelConfig,
+  MATRIX_SLOTS_CONFIG,
+  MatrixSlotConfig,
   OFFICIAL_TREASURY_WALLET,
 } from '../lib/referral-engine';
 import { ForsageSlotCard, SlotCardData } from './matrix/ForsageSlotCard';
@@ -66,11 +69,13 @@ interface ForsageDashboardProps {
   onPreviewMemberId?: (id: number) => void;
   onNavigateToMatrix?: () => void;
   onNavigateToPartners?: () => void;
+  onNavigateToTeamPicture?: () => void;
   onNavigateToDocs?: () => void;
   onNavigateToContribute?: () => void;
   onNavigateToJoin?: () => void;
   onInspectSlotLevel?: (level: number) => void;
   onRefreshData?: () => void;
+  baseTokenPriceUsd?: number;
 }
 
 export const ForsageDashboard: FC<ForsageDashboardProps> = ({
@@ -80,11 +85,14 @@ export const ForsageDashboard: FC<ForsageDashboardProps> = ({
   referrals,
   aiqxBalance,
   solBalance,
+  baseTokenPriceUsd = 0.0002613,
   isPreviewMode = false,
   onExitPreview,
   onPreviewMemberId,
+  onNavigateToTeamPicture,
   onNavigateToDocs,
   onNavigateToJoin,
+  onInspectSlotLevel,
   onRefreshData,
 }) => {
   const [copiedLink, setCopiedLink] = useState(false);
@@ -98,9 +106,9 @@ export const ForsageDashboard: FC<ForsageDashboardProps> = ({
   const [downlineLeaders, setDownlineLeaders] = useState<any[]>([]);
   const [isLoadingLeaders, setIsLoadingLeaders] = useState(false);
 
-  // 14-Level Modal State
-  const [inspectingLevel, setInspectingLevel] = useState<MatrixLevelConfig | null>(null);
-  const [activatingLevel, setActivatingLevel] = useState<MatrixLevelConfig | null>(null);
+  // 12-Slot Modal State
+  const [inspectingLevel, setInspectingLevel] = useState<MatrixSlotConfig | null>(null);
+  const [activatingLevel, setActivatingLevel] = useState<MatrixSlotConfig | null>(null);
   const [isActivating, setIsActivating] = useState(false);
   const [activationError, setActivationError] = useState<string | null>(null);
   const [activationSuccess, setActivationSuccess] = useState<string | null>(null);
@@ -131,6 +139,22 @@ export const ForsageDashboard: FC<ForsageDashboardProps> = ({
     }
   };
 
+  const handleShare = async () => {
+    if (typeof navigator !== 'undefined' && navigator.share) {
+      try {
+        await navigator.share({
+          title: 'Join AIQX Solana Matrix',
+          text: `Join my AIQX Matrix team with Sponsor ID #${memberId}!`,
+          url: personalLink,
+        });
+      } catch (e) {
+        copyToClipboard(personalLink, 'link');
+      }
+    } else {
+      copyToClipboard(personalLink, 'link');
+    }
+  };
+
   const copyPartnerWallet = async (wallet: string) => {
     try {
       await navigator.clipboard.writeText(wallet);
@@ -148,10 +172,13 @@ export const ForsageDashboard: FC<ForsageDashboardProps> = ({
         month: '2-digit',
         year: 'numeric',
       })
-    : '01.06.2024';
+    : '07.06.2024';
 
   const sponsorId = user.sponsorId || (memberId > 1 ? 1 : null);
   const activeLevels = user.activeLevels || [1];
+
+  // Identify next slot to upgrade
+  const nextSlotToUpgrade = MATRIX_SLOTS_CONFIG.find((s) => !activeLevels.includes(s.level));
 
   // Fetch live top 3 downline leaders for 40 AIQX pool qualification
   useEffect(() => {
@@ -178,7 +205,7 @@ export const ForsageDashboard: FC<ForsageDashboardProps> = ({
   }, [user.wallet, memberId]);
 
   // Handle independent level activation
-  const handleActivateLevel = async (lvl: MatrixLevelConfig) => {
+  const handleActivateLevel = async (lvl: MatrixSlotConfig) => {
     try {
       setIsActivating(true);
       setActivationError(null);
@@ -196,19 +223,19 @@ export const ForsageDashboard: FC<ForsageDashboardProps> = ({
 
       const data = await res.json();
       if (data.success) {
-        setActivationSuccess(`Level ${lvl.level} activated successfully!`);
+        setActivationSuccess(`Slot ${lvl.level} activated successfully!`);
         onRefreshData?.();
       } else {
-        setActivationError(data.error || `Failed to activate Level ${lvl.level}`);
+        setActivationError(data.error || `Failed to activate Slot ${lvl.level}`);
       }
     } catch (err: any) {
-      setActivationError(err.message || 'Network error activating level.');
+      setActivationError(err.message || 'Network error activating slot.');
     } finally {
       setIsActivating(false);
     }
   };
 
-  // Handle Level 1 direct slot recycle (Same-Level Recycling: 50 upline, 10 treasury, 40 top 3 downline leaders)
+  // Handle Level 1 direct slot recycle
   const handleRecycleLevel1 = async () => {
     try {
       setIsRecyclingL1(true);
@@ -256,21 +283,26 @@ export const ForsageDashboard: FC<ForsageDashboardProps> = ({
       ? referrals.tree.l2
       : referrals.tree.l3;
 
+  const estimatedUsdProfits = (earnings.totalEarnings * baseTokenPriceUsd).toLocaleString(
+    undefined,
+    { minimumFractionDigits: 1, maximumFractionDigits: 2 }
+  );
+
   return (
     <div className="space-y-6 max-w-7xl mx-auto py-2">
       {/* Read-Only Preview Mode Notice Banner */}
       {isPreviewMode && (
-        <div className="flex items-center justify-between px-5 py-3 rounded-2xl bg-blue-600/15 border border-blue-500/30 text-xs">
+        <div className="flex items-center justify-between px-5 py-3 rounded-2xl bg-blue-600/15 border border-blue-500/30 text-xs shadow-md">
           <div className="flex items-center space-x-2 text-blue-300">
             <span className="w-2 h-2 rounded-full bg-blue-400 animate-ping" />
             <span className="font-semibold">
-              Preview Mode: Inspecting public on-chain profile &amp; matrix for Member ID #{memberId}
+              Preview Mode: Inspecting public on-chain profile &amp; 12-slot matrix for Member ID #{memberId}
             </span>
           </div>
           {onExitPreview && (
             <button
               onClick={onExitPreview}
-              className="px-3 py-1 rounded-xl bg-blue-600 hover:bg-blue-500 text-white font-medium cursor-pointer transition-colors shadow-sm"
+              className="px-3.5 py-1.5 rounded-xl bg-blue-600 hover:bg-blue-500 text-white font-bold cursor-pointer transition-colors shadow-sm"
             >
               Exit Preview
             </button>
@@ -278,25 +310,33 @@ export const ForsageDashboard: FC<ForsageDashboardProps> = ({
         </div>
       )}
 
-      {/* TOP ROW: User Profile Card (Left) & Personal Link Card (Right) */}
-      <div className="grid grid-cols-1 md:grid-cols-12 gap-5">
+      {/* ROW 1: USER PROFILE BANNER (Matches left profile card & right personal link card in screenshot) */}
+      <div className="grid grid-cols-1 lg:grid-cols-12 gap-5">
         {/* Left User Card (5 cols) */}
-        <div className="md:col-span-6 lg:col-span-5 p-6 rounded-3xl bg-[#11161E] border border-[#1E2533] flex items-center space-x-5 shadow-lg relative overflow-hidden">
+        <div className="lg:col-span-5 p-6 rounded-3xl bg-[#111622] border border-[#1E2533] flex items-center space-x-5 shadow-lg relative overflow-hidden">
           <div className="absolute -top-12 -left-12 w-36 h-36 bg-blue-500/10 rounded-full blur-2xl pointer-events-none" />
 
-          {/* Large Avatar with Medal Badge */}
+          {/* Large Avatar with Glowing Ring */}
           <div className="relative shrink-0">
-            <div className="w-20 h-20 rounded-full bg-gradient-to-tr from-[#1E293B] to-[#334155] border-2 border-blue-500/40 flex items-center justify-center text-blue-400 shadow-inner">
-              <User className="w-10 h-10" />
+            <div className="w-20 h-20 rounded-full bg-gradient-to-tr from-[#1E283D] to-[#2B3852] border-2 border-blue-500/50 flex items-center justify-center text-blue-400 shadow-lg">
+              <User className="w-10 h-10 text-blue-300" />
             </div>
-            <div className="absolute -bottom-1 -right-1 w-6 h-6 rounded-full bg-gradient-to-r from-amber-400 to-amber-600 border-2 border-[#11161E] flex items-center justify-center text-black font-black text-[9px] shadow-md">
+            <div className="absolute -bottom-1 -right-1 w-6 h-6 rounded-full bg-gradient-to-r from-amber-400 to-amber-600 border-2 border-[#111622] flex items-center justify-center text-black font-black text-[9px] shadow-md">
               <Award className="w-3.5 h-3.5" />
             </div>
           </div>
 
           {/* Member Details */}
-          <div className="space-y-1.5 min-w-0">
-            <h1 className="text-3xl font-black text-white tracking-tight">ID {memberId}</h1>
+          <div className="space-y-1.5 min-w-0 flex-1">
+            <div className="flex items-center space-x-2">
+              <h1 className="text-2xl sm:text-3xl font-black text-white tracking-tight truncate">
+                MEMBER {memberId}
+              </h1>
+              <span className="text-xs font-mono font-bold text-blue-400 bg-blue-600/15 px-2 py-0.5 rounded-lg border border-blue-500/30">
+                ID {memberId}
+              </span>
+              <Settings className="w-4 h-4 text-[#6E7681] hover:text-white cursor-pointer transition-colors shrink-0" />
+            </div>
 
             {/* Wallet Address with Copy and Explorer */}
             <div className="flex items-center space-x-2 text-xs font-mono text-[#8B949E]">
@@ -340,42 +380,58 @@ export const ForsageDashboard: FC<ForsageDashboardProps> = ({
           </div>
         </div>
 
-        {/* Right Personal Link Card (7 cols) */}
-        <div className="md:col-span-6 lg:col-span-7 p-6 rounded-3xl bg-[#11161E] border border-[#1E2533] flex flex-col justify-between shadow-lg relative overflow-hidden">
-          <div className="absolute -top-12 -right-12 w-36 h-36 bg-blue-500/10 rounded-full blur-2xl pointer-events-none" />
+        {/* Right Personal Link Card (7 cols) - Matches Blue Card in Screenshot */}
+        <div className="lg:col-span-7 p-6 rounded-3xl bg-gradient-to-r from-[#142D5A] via-[#11244A] to-[#0E1B38] border border-blue-500/30 flex flex-col justify-between shadow-xl relative overflow-hidden">
+          <div className="absolute -top-12 -right-12 w-44 h-44 bg-blue-400/15 rounded-full blur-3xl pointer-events-none" />
 
           <div className="space-y-2">
-            <div className="flex items-center space-x-1.5 text-xs text-[#8B949E]">
-              <span className="font-semibold">Personal link</span>
-              <span className="text-[10px] text-blue-400 font-mono bg-blue-600/10 px-2 py-0.5 rounded-full border border-blue-500/20">
-                Direct Line
-              </span>
+            <div className="flex items-center justify-between text-xs text-blue-200">
+              <div className="flex items-center space-x-1.5">
+                <span className="font-bold text-sm text-white">My personal link</span>
+                <HelpCircle className="w-3.5 h-3.5 text-blue-300" />
+              </div>
+              <ArrowUpRight className="w-4 h-4 text-blue-300" />
             </div>
 
-            {/* Link & Copy */}
-            <div className="flex items-center justify-between p-3 rounded-2xl bg-[#0B0E14] border border-[#1E2533]">
-              <span className="text-sm sm:text-base font-bold text-blue-400 font-mono truncate mr-2">
-                aiqx.sol/b/{memberId}
-              </span>
+            {/* Link Text */}
+            <div className="text-sm sm:text-base font-extrabold text-blue-300 font-mono tracking-tight truncate py-1">
+              {personalLink}
+            </div>
+
+            {/* Action Buttons: Copy & Share */}
+            <div className="flex items-center space-x-3 pt-1">
               <button
                 onClick={() => copyToClipboard(personalLink, 'link')}
-                className="p-1.5 rounded-lg bg-[#171D27] hover:bg-[#202735] text-[#8B949E] hover:text-white transition-colors cursor-pointer shrink-0"
-                title="Copy Personal Link"
+                className="px-5 py-2 rounded-2xl bg-[#1E4FD9] hover:bg-[#2563EB] text-white font-bold text-xs transition-colors flex items-center space-x-1.5 cursor-pointer shadow-md shadow-blue-900/30"
               >
                 {copiedLink ? (
-                  <Check className="w-4 h-4 text-emerald-400" />
+                  <>
+                    <Check className="w-3.5 h-3.5 text-emerald-300" />
+                    <span>Copied!</span>
+                  </>
                 ) : (
-                  <Copy className="w-4 h-4" />
+                  <>
+                    <Copy className="w-3.5 h-3.5" />
+                    <span>Copy</span>
+                  </>
                 )}
+              </button>
+
+              <button
+                onClick={handleShare}
+                className="px-5 py-2 rounded-2xl bg-[#1E4FD9] hover:bg-[#2563EB] text-white font-bold text-xs transition-colors flex items-center space-x-1.5 cursor-pointer shadow-md shadow-blue-900/30"
+              >
+                <Share2 className="w-3.5 h-3.5" />
+                <span>Share</span>
               </button>
             </div>
           </div>
 
-          <div className="flex items-center justify-between pt-4 text-xs text-[#8B949E]">
+          <div className="flex items-center justify-between pt-4 text-xs text-blue-200/80 border-t border-blue-500/20 mt-3">
             <span>Join with this sponsor ID #{memberId}</span>
             <button
               onClick={onNavigateToJoin}
-              className="px-4 py-2 rounded-xl bg-blue-600 hover:bg-blue-500 text-white font-bold text-xs shadow-md shadow-blue-500/25 transition-all cursor-pointer"
+              className="px-4 py-1.5 rounded-xl bg-white hover:bg-blue-50 text-blue-900 font-extrabold text-xs shadow-sm transition-all cursor-pointer"
             >
               Sign up
             </button>
@@ -383,26 +439,29 @@ export const ForsageDashboard: FC<ForsageDashboardProps> = ({
         </div>
       </div>
 
-      {/* SECOND ROW: 4 Stat Metric Cards (Partners, Team, Ratio, Profits with Staircase Sparkline) */}
+      {/* ROW 2: 4 STAT METRIC CARDS (Partners, Team, Ratio, Profits with Rising Staircase Sparkline) */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
         {/* Card 1: Partners */}
         <div
           onClick={() => setActiveNetworkLine('l1')}
-          className={`p-5 rounded-3xl bg-[#11161E] border transition-all cursor-pointer shadow-sm group ${
+          className={`p-5 rounded-3xl bg-[#111622] border transition-all cursor-pointer shadow-sm group ${
             activeNetworkLine === 'l1'
-              ? 'border-blue-500 ring-1 ring-blue-500/30'
+              ? 'border-blue-500 ring-1 ring-blue-500/40'
               : 'border-[#1E2533] hover:border-[#2C364A]'
           }`}
         >
-          <div className="flex items-center space-x-1.5 text-xs text-[#8B949E]">
-            <span className="font-medium">Partners</span>
+          <div className="flex items-center justify-between text-xs text-[#8B949E] mb-2">
+            <div className="flex items-center space-x-1">
+              <span className="font-semibold text-white text-sm">Partners</span>
+              <HelpCircle className="w-3 h-3 text-[#6E7681]" />
+            </div>
             <span className="text-[10px] text-blue-400 font-mono">Line 1</span>
           </div>
           <div>
-            <div className="text-2xl sm:text-3xl font-black text-white group-hover:text-blue-400 transition-colors">
+            <div className="text-3xl font-black text-white group-hover:text-blue-400 transition-colors">
               {referrals.l1Count.toLocaleString()}
             </div>
-            <div className="text-xs text-emerald-400 font-medium flex items-center space-x-1 mt-1">
+            <div className="text-xs text-emerald-400 font-bold flex items-center space-x-1 mt-1">
               <span>↑</span>
               <span>{referrals.l1Count > 0 ? `+${referrals.l1Count}` : '0'}</span>
             </div>
@@ -412,21 +471,24 @@ export const ForsageDashboard: FC<ForsageDashboardProps> = ({
         {/* Card 2: Team */}
         <div
           onClick={() => setActiveNetworkLine('l2')}
-          className={`p-5 rounded-3xl bg-[#11161E] border transition-all cursor-pointer shadow-sm group ${
+          className={`p-5 rounded-3xl bg-[#111622] border transition-all cursor-pointer shadow-sm group ${
             activeNetworkLine === 'l2' || activeNetworkLine === 'l3'
-              ? 'border-blue-500 ring-1 ring-blue-500/30'
+              ? 'border-blue-500 ring-1 ring-blue-500/40'
               : 'border-[#1E2533] hover:border-[#2C364A]'
           }`}
         >
-          <div className="flex items-center space-x-1.5 text-xs text-[#8B949E]">
-            <span className="font-medium">Team</span>
+          <div className="flex items-center justify-between text-xs text-[#8B949E] mb-2">
+            <div className="flex items-center space-x-1">
+              <span className="font-semibold text-white text-sm">Team</span>
+              <HelpCircle className="w-3 h-3 text-[#6E7681]" />
+            </div>
             <span className="text-[10px] text-purple-400 font-mono">3 Lines</span>
           </div>
           <div>
-            <div className="text-2xl sm:text-3xl font-black text-white group-hover:text-blue-400 transition-colors">
+            <div className="text-3xl font-black text-white group-hover:text-blue-400 transition-colors">
               {referrals.totalNetworkCount.toLocaleString()}
             </div>
-            <div className="text-xs text-emerald-400 font-medium flex items-center space-x-1 mt-1">
+            <div className="text-xs text-emerald-400 font-bold flex items-center space-x-1 mt-1">
               <span>↑</span>
               <span>{referrals.totalNetworkCount > 0 ? `+${referrals.totalNetworkCount}` : '0'}</span>
             </div>
@@ -434,38 +496,47 @@ export const ForsageDashboard: FC<ForsageDashboardProps> = ({
         </div>
 
         {/* Card 3: Ratio */}
-        <div className="p-5 rounded-3xl bg-[#11161E] border border-[#1E2533] space-y-3 shadow-sm">
-          <div className="flex items-center space-x-1.5 text-xs text-[#8B949E]">
-            <span className="font-medium">Ratio</span>
-            <span className="text-[10px] text-[#6E7681] font-mono">ROI %</span>
+        <div className="p-5 rounded-3xl bg-[#111622] border border-[#1E2533] shadow-sm flex flex-col justify-between">
+          <div className="flex items-center justify-between text-xs text-[#8B949E] mb-2">
+            <div className="flex items-center space-x-1">
+              <span className="font-semibold text-white text-sm">Ratio</span>
+              <HelpCircle className="w-3 h-3 text-[#6E7681]" />
+            </div>
+            <span className="text-[10px] text-[#6E7681] font-mono">Efficiency</span>
           </div>
           <div>
-            <div className="text-2xl sm:text-3xl font-black text-white">{ratioPercent} %</div>
-            <div className="text-xs text-emerald-400 font-medium flex items-center space-x-1 mt-1">
+            <div className="text-3xl font-black text-white">{ratioPercent} %</div>
+            <div className="text-xs text-emerald-400 font-bold flex items-center space-x-1 mt-1">
               <span>↑</span>
-              <span>Active</span>
+              <span>0 %</span>
             </div>
           </div>
         </div>
 
         {/* Card 4: Profits with Forsage Staircase Area Sparkline */}
-        <div className="p-5 rounded-3xl bg-[#11161E] border border-[#1E2533] relative overflow-hidden flex flex-col justify-between shadow-sm">
+        <div className="p-5 rounded-3xl bg-[#111622] border border-[#1E2533] relative overflow-hidden flex flex-col justify-between shadow-sm">
           <div className="space-y-1 relative z-10">
-            <div className="flex items-center space-x-1.5 text-xs text-[#8B949E]">
-              <span className="font-medium">Profits</span>
-              <span className="text-[10px] text-blue-400 font-mono">Total Net</span>
+            <div className="flex items-center justify-between text-xs text-[#8B949E]">
+              <div className="flex items-center space-x-1">
+                <span className="font-semibold text-white text-sm">Profits</span>
+                <HelpCircle className="w-3 h-3 text-[#6E7681]" />
+              </div>
+              <span className="text-[10px] text-blue-400 font-mono">Net Earned</span>
             </div>
             <div className="text-2xl sm:text-3xl font-black text-white truncate">
               {earnings.totalEarnings.toLocaleString()}{' '}
-              <span className="text-base text-blue-400 font-bold">AIQX</span>
+              <span className="text-sm font-bold text-blue-400">AIQX</span>
             </div>
-            <div className="text-xs text-emerald-400 font-medium flex items-center space-x-1">
+            <div className="text-xs text-[#8B949E] font-mono">
+              ~${estimatedUsdProfits}
+            </div>
+            <div className="text-xs text-emerald-400 font-bold flex items-center space-x-1 pt-0.5">
               <span>↑</span>
               <span>{earnings.totalEarnings > 0 ? `+${earnings.totalEarnings} AIQX` : '0 AIQX'}</span>
             </div>
           </div>
 
-          {/* Staircase Area SVG Chart matching Forsage image */}
+          {/* Smooth Rising Blue Staircase Area Chart matching Forsage image */}
           <div className="absolute right-0 bottom-0 w-36 h-20 opacity-80 pointer-events-none">
             <svg viewBox="0 0 140 80" fill="none" className="w-full h-full">
               <path
@@ -475,13 +546,13 @@ export const ForsageDashboard: FC<ForsageDashboardProps> = ({
               <path
                 d="M0,75 L25,75 L25,55 L60,55 L60,35 L95,35 L95,15 L140,15"
                 stroke="#3B82F6"
-                strokeWidth="2"
+                strokeWidth="2.5"
                 strokeLinecap="round"
                 strokeLinejoin="round"
               />
               <defs>
                 <linearGradient id="profitGrad" x1="0" y1="0" x2="0" y2="80" gradientUnits="userSpaceOnUse">
-                  <stop stopColor="#3B82F6" stopOpacity="0.4" />
+                  <stop stopColor="#3B82F6" stopOpacity="0.45" />
                   <stop offset="1" stopColor="#3B82F6" stopOpacity="0.0" />
                 </linearGradient>
               </defs>
@@ -490,8 +561,179 @@ export const ForsageDashboard: FC<ForsageDashboardProps> = ({
         </div>
       </div>
 
-      {/* THIRD ROW: USERS NETWORK TRACK SYSTEM (Directly on Dashboard) */}
-      <div className="p-6 rounded-3xl bg-[#11161E] border border-[#1E2533] space-y-5 shadow-lg">
+      {/* ROW 3: FORSAGE PROGRAMS SECTION -> SINGLE PROGRAM WITH 12 SLOTS */}
+      {/* (User prompt: "no 3x 4x, only slots visible like this, total of 12 slots in our system, design like this no multiple 3x 4x, only one matrix program") */}
+      <div className="space-y-4 pt-2">
+        {/* Section Header: AIQX Program (Info badge) */}
+        <div className="flex items-center space-x-2">
+          <h2 className="text-xl sm:text-2xl font-black text-white tracking-tight">
+            AIQX Program
+          </h2>
+          <span className="px-2.5 py-0.5 rounded-full bg-blue-600 text-white font-bold text-xs shadow-sm">
+            Info
+          </span>
+        </div>
+
+        {/* Program Overview Card: Styled identically to Forsage Program Card */}
+        <div className="p-6 rounded-3xl bg-gradient-to-r from-[#141A29] via-[#121724] to-[#10141F] border border-[#1E273A] shadow-xl relative overflow-hidden">
+          <div className="flex flex-col md:flex-row md:items-center justify-between gap-6">
+            {/* Left: Program Title & 12 Mini Slot Tiles Preview Matrix */}
+            <div className="space-y-3">
+              <div className="flex items-center space-x-2">
+                <span className="text-lg font-black text-white tracking-wide">
+                  AIQX Matrix (12 Slots)
+                </span>
+                <span className="text-xs font-mono text-blue-400 bg-blue-600/10 px-2 py-0.5 rounded-full border border-blue-500/20">
+                  Zero Multi-Level • Pure Slots
+                </span>
+              </div>
+
+              {/* 12 Mini Slot Tiles Preview Matrix (2 rows of 6 squares matching screenshot) */}
+              <div className="space-y-1">
+                <div className="text-[10px] font-mono text-[#8B949E] uppercase tracking-wider">
+                  Slot Matrix Activation Map ({activeLevels.length}/12 Slots Active)
+                </div>
+                <div className="grid grid-cols-6 gap-1.5 w-fit">
+                  {MATRIX_SLOTS_CONFIG.map((lvl) => {
+                    const isUnlocked = activeLevels.includes(lvl.level);
+                    return (
+                      <button
+                        key={lvl.level}
+                        onClick={() => {
+                          if (onInspectSlotLevel) {
+                            onInspectSlotLevel(lvl.level);
+                          } else {
+                            setInspectingLevel(lvl);
+                          }
+                        }}
+                        title={`Slot ${lvl.level}: ${lvl.totalPackageFee.toLocaleString()} AIQX (${
+                          isUnlocked ? 'Active' : 'Locked'
+                        })`}
+                        className={`w-8 h-6 rounded-md transition-all cursor-pointer flex items-center justify-center font-mono text-[10px] font-bold ${
+                          isUnlocked
+                            ? 'bg-blue-600 hover:bg-blue-500 text-white shadow-sm'
+                            : 'bg-[#1C2538] hover:bg-[#25324C] text-[#6E7681] border border-[#28354E]'
+                        }`}
+                      >
+                        {lvl.level}
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+            </div>
+
+            {/* Right: Total Earnings in Program & Upgrade Action Button */}
+            <div className="flex flex-col sm:flex-row md:flex-col items-start md:items-end justify-between gap-3">
+              <div className="text-left md:text-right">
+                <div className="flex items-center md:justify-end space-x-1.5">
+                  <span className="text-2xl font-black text-white font-mono">
+                    {earnings.totalEarnings.toLocaleString()}
+                  </span>
+                  <span className="text-sm font-bold text-blue-400 font-mono">AIQX</span>
+                  <ArrowUpRight className="w-4 h-4 text-[#8B949E]" />
+                </div>
+                <div className="text-xs text-[#8B949E] font-mono">
+                  ~${estimatedUsdProfits} USD
+                </div>
+              </div>
+
+              {/* Upgrade Button or Total Team Action */}
+              <div className="flex flex-wrap items-center gap-2">
+                {nextSlotToUpgrade ? (
+                  <button
+                    onClick={() => handleActivateLevel(nextSlotToUpgrade)}
+                    disabled={isActivating}
+                    className="px-6 py-2.5 rounded-2xl bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-500 hover:to-indigo-500 text-white font-extrabold text-xs shadow-lg shadow-blue-600/30 transition-all cursor-pointer flex items-center space-x-1.5"
+                  >
+                    {isActivating ? (
+                      <Loader2 className="w-4 h-4 animate-spin" />
+                    ) : (
+                      <ArrowUpRight className="w-4 h-4" />
+                    )}
+                    <span>
+                      Upgrade {nextSlotToUpgrade.totalPackageFee.toLocaleString()} AIQX
+                    </span>
+                  </button>
+                ) : (
+                  <div className="px-4 py-2 rounded-2xl bg-emerald-500/20 text-emerald-400 font-bold text-xs border border-emerald-500/30 flex items-center space-x-1.5">
+                    <CheckCircle2 className="w-4 h-4" />
+                    <span>All 12 Slots Active</span>
+                  </div>
+                )}
+
+                {/* Full Picture of Total Team CTA */}
+                {onNavigateToTeamPicture && (
+                  <button
+                    onClick={onNavigateToTeamPicture}
+                    className="px-4 py-2 rounded-2xl bg-[#1C2538] hover:bg-[#25324C] text-white font-bold text-xs border border-[#28354E] transition-all cursor-pointer flex items-center space-x-1.5"
+                  >
+                    <Users className="w-3.5 h-3.5 text-blue-400" />
+                    <span>Team Picture</span>
+                  </button>
+                )}
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* Feedback Notifications */}
+        {activationSuccess && (
+          <div className="p-3.5 rounded-2xl bg-emerald-950/40 border border-emerald-500/40 text-xs text-emerald-300 flex items-center space-x-2 animate-fadeIn">
+            <CheckCircle2 className="w-4 h-4 text-emerald-400 shrink-0" />
+            <span>{activationSuccess}</span>
+          </div>
+        )}
+
+        {activationError && (
+          <div className="p-3.5 rounded-2xl bg-red-950/40 border border-red-500/40 text-xs text-red-300 flex items-center space-x-2 animate-fadeIn">
+            <AlertCircle className="w-4 h-4 text-red-400 shrink-0" />
+            <span>{activationError}</span>
+          </div>
+        )}
+
+        {recycleSuccess && (
+          <div className="p-3.5 rounded-2xl bg-cyan-950/40 border border-cyan-500/40 text-xs text-cyan-300 flex items-center space-x-2 animate-fadeIn">
+            <CheckCircle2 className="w-4 h-4 text-cyan-400 shrink-0" />
+            <span>{recycleSuccess}</span>
+          </div>
+        )}
+
+        {/* ALL 12 SLOTS GRID (DIRECTLY VISIBLE IN THE PROGRAM) */}
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 pt-1">
+          {MATRIX_SLOTS_CONFIG.map((lvlConfig) => {
+            const isUnlocked = activeLevels.includes(lvlConfig.level);
+            const isNextInLine =
+              !isUnlocked &&
+              (lvlConfig.level === 1 || activeLevels.includes(lvlConfig.level - 1));
+
+            return (
+              <ForsageSlotCard
+                key={lvlConfig.level}
+                config={lvlConfig}
+                isUnlocked={isUnlocked}
+                isNextInLine={isNextInLine}
+                connected={true}
+                onInspect={(levelNum) => {
+                  if (onInspectSlotLevel) {
+                    onInspectSlotLevel(levelNum);
+                  } else {
+                    const cfg = MATRIX_SLOTS_CONFIG.find((l) => l.level === levelNum);
+                    if (cfg) setInspectingLevel(cfg);
+                  }
+                }}
+                onActivate={(cfg) => {
+                  setActivatingLevel(cfg);
+                  handleActivateLevel(cfg);
+                }}
+              />
+            );
+          })}
+        </div>
+      </div>
+
+      {/* ROW 4: USERS NETWORK TRACK SYSTEM (Directly Below 12 Slots) */}
+      <div className="p-6 rounded-3xl bg-[#111622] border border-[#1E2533] space-y-5 shadow-lg">
         {/* Network Header & 3-Line Switcher */}
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-4 border-b border-[#1E2533]">
           <div className="space-y-1">
@@ -502,7 +744,7 @@ export const ForsageDashboard: FC<ForsageDashboardProps> = ({
               </h2>
             </div>
             <p className="text-xs text-[#8B949E]">
-              Track your 3-line downline hierarchy, active slot levels &amp; leader rankings.
+              Track your 3-line direct and downline hierarchy &amp; auto-qualified top 3 downline leaders.
             </p>
           </div>
 
@@ -658,7 +900,7 @@ export const ForsageDashboard: FC<ForsageDashboardProps> = ({
                     <div
                       key={leader.rank}
                       onClick={() => onPreviewMemberId?.(leaderId)}
-                      className="p-2.5 rounded-xl bg-[#11161E] border border-[#1E2533] flex items-center justify-between cursor-pointer hover:border-amber-400/40 transition-colors"
+                      className="p-2.5 rounded-xl bg-[#111622] border border-[#1E2533] flex items-center justify-between cursor-pointer hover:border-amber-400/40 transition-colors"
                     >
                       <div className="flex items-center space-x-2.5">
                         <div
@@ -700,100 +942,6 @@ export const ForsageDashboard: FC<ForsageDashboardProps> = ({
               Zero-Burn Policy • Distributed atomically upon slot completion.
             </div>
           </div>
-        </div>
-      </div>
-
-      {/* FOURTH ROW: THE 14-LEVEL MATRIX SYSTEM (The Heart of the Dashboard) */}
-      <div className="space-y-4 pt-2">
-        {/* Section Header */}
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-          <div className="space-y-1">
-            <div className="flex items-center space-x-2">
-              <Layers className="w-5 h-5 text-blue-400" />
-              <h2 className="text-xl font-black text-white tracking-tight">
-                14-Level Doubling Matrix System
-              </h2>
-            </div>
-            <p className="text-xs text-[#8B949E]">
-              Each level is independent and activated based on your decision. Level 1 slot remains exact &amp; recycles once fulfilled.
-            </p>
-          </div>
-
-          <div className="flex items-center space-x-2">
-            {/* Level 1 Quick Recycle Button if active */}
-            {activeLevels.includes(1) && (
-              <button
-                onClick={handleRecycleLevel1}
-                disabled={isRecyclingL1}
-                className="px-3.5 py-1.5 rounded-xl bg-cyan-600 hover:bg-cyan-500 disabled:opacity-50 text-black font-extrabold text-xs shadow-md shadow-cyan-500/20 flex items-center space-x-1.5 cursor-pointer transition-all"
-                title="Recycle Level 1 Slot: 50 AIQX to Upline, 10 to Treasury, 40 to Top 3 Leaders"
-              >
-                {isRecyclingL1 ? (
-                  <Loader2 className="w-3.5 h-3.5 animate-spin" />
-                ) : (
-                  <Repeat className="w-3.5 h-3.5" />
-                )}
-                <span>Recycle L1 (100 AIQX)</span>
-              </button>
-            )}
-
-            <button
-              onClick={onNavigateToDocs}
-              className="px-3 py-1.5 rounded-xl bg-[#171D27] hover:bg-[#202735] text-xs font-mono text-blue-400 border border-[#1E2533] cursor-pointer transition-colors"
-            >
-              14-Level Math Docs →
-            </button>
-          </div>
-        </div>
-
-        {/* Recycling / Activation feedback notification */}
-        {recycleSuccess && (
-          <div className="p-3 rounded-2xl bg-cyan-950/40 border border-cyan-500/40 text-xs text-cyan-300 flex items-center space-x-2 animate-fadeIn">
-            <CheckCircle2 className="w-4 h-4 text-cyan-400 shrink-0" />
-            <span>{recycleSuccess}</span>
-          </div>
-        )}
-
-        {activationSuccess && (
-          <div className="p-3 rounded-2xl bg-emerald-950/40 border border-emerald-500/40 text-xs text-emerald-300 flex items-center space-x-2 animate-fadeIn">
-            <CheckCircle2 className="w-4 h-4 text-emerald-400 shrink-0" />
-            <span>{activationSuccess}</span>
-          </div>
-        )}
-
-        {activationError && (
-          <div className="p-3 rounded-2xl bg-red-950/40 border border-red-500/40 text-xs text-red-300 flex items-center space-x-2 animate-fadeIn">
-            <AlertCircle className="w-4 h-4 text-red-400 shrink-0" />
-            <span>{activationError}</span>
-          </div>
-        )}
-
-        {/* 14-LEVEL MATRIX GRID */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
-          {MATRIX_LEVELS_CONFIG.map((lvlConfig) => {
-            const isUnlocked = activeLevels.includes(lvlConfig.level);
-            const isNextInLine =
-              !isUnlocked &&
-              (lvlConfig.level === 1 || activeLevels.includes(lvlConfig.level - 1));
-
-            return (
-              <ForsageSlotCard
-                key={lvlConfig.level}
-                config={lvlConfig}
-                isUnlocked={isUnlocked}
-                isNextInLine={isNextInLine}
-                connected={true}
-                onInspect={(levelNum) => {
-                  const cfg = MATRIX_LEVELS_CONFIG.find((l) => l.level === levelNum);
-                  if (cfg) setInspectingLevel(cfg);
-                }}
-                onActivate={(cfg) => {
-                  setActivatingLevel(cfg);
-                  handleActivateLevel(cfg);
-                }}
-              />
-            );
-          })}
         </div>
       </div>
 

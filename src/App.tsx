@@ -11,6 +11,8 @@ import { RealSwapTerminal } from './components/RealSwapTerminal';
 import { JoinSection } from './components/JoinSection';
 import { SolanaLogo } from './components/SolanaLogo';
 import { TokenGuideModal } from './components/TokenGuideModal';
+import { TotalTeamPicture } from './components/matrix/TotalTeamPicture';
+import { SlotTreeView } from './components/matrix/SlotTreeView';
 
 import {
   DEFAULT_CONFIG,
@@ -43,6 +45,8 @@ function AppContent() {
 
   const [config, setConfig] = useState<AppConfig>(DEFAULT_CONFIG);
   const [activeTab, setActiveTab] = useState<NavigationTab>('dashboard');
+  const [selectedSlotLevel, setSelectedSlotLevel] = useState<number>(1);
+  const [isActivatingSlot, setIsActivatingSlot] = useState<boolean>(false);
   const [isTokenGuideOpen, setIsTokenGuideOpen] = useState<boolean>(false);
   const [isJoinModalOpen, setIsJoinModalOpen] = useState<boolean>(false);
 
@@ -272,6 +276,33 @@ function AppContent() {
     ? (previewReferralsData || referralsData)
     : (userData ? referralsData : (previewReferralsData || referralsData));
 
+  const handleActivateSlot = async (slotConfig: any) => {
+    try {
+      setIsActivatingSlot(true);
+      const target = displayUser?.wallet || String(displayUser?.id || 1);
+      const res = await fetch('/api/matrix/upgrade-level', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          wallet: target,
+          level: slotConfig.level,
+        }),
+      });
+      const data = await res.json();
+      if (data.success) {
+        await loadUserData();
+        await loadPlatformData();
+        if (displayUser?.id) {
+          await loadPreviewMember(String(displayUser.id));
+        }
+      }
+    } catch (err) {
+      console.warn('Error upgrading slot:', err);
+    } finally {
+      setIsActivatingSlot(false);
+    }
+  };
+
   return (
     <div className="min-h-screen flex flex-col bg-[#0B0E14] text-[#E6EDF3]">
       {/* Forsage-style Top Banner */}
@@ -283,6 +314,8 @@ function AppContent() {
         userWallet={userData?.wallet}
         userId={userData?.id}
         baseTokenPriceUsd={poolMetrics.baseTokenPriceUsd}
+        aiqxBalance={aiqxBalance}
+        solBalance={solBalance}
         onOpenTokenGuide={() => setIsTokenGuideOpen(true)}
         previewIdInput={previewIdInput}
         setPreviewIdInput={setPreviewIdInput}
@@ -328,6 +361,7 @@ function AppContent() {
               referrals={displayReferrals}
               aiqxBalance={aiqxBalance}
               solBalance={solBalance}
+              baseTokenPriceUsd={poolMetrics.baseTokenPriceUsd}
               isPreviewMode={isPreviewMode}
               onExitPreview={handleClearPreview}
               onPreviewMemberId={(id) => {
@@ -335,11 +369,44 @@ function AppContent() {
                 loadPreviewMember(String(id));
               }}
               onNavigateToDocs={() => setActiveTab('docs')}
+              onNavigateToTeamPicture={() => setActiveTab('team-picture')}
               onNavigateToJoin={() => setIsJoinModalOpen(true)}
+              onInspectSlotLevel={(level) => {
+                setSelectedSlotLevel(level);
+                setActiveTab('slot-tree');
+              }}
               onRefreshData={() => {
                 loadUserData();
                 loadPlatformData();
               }}
+            />
+          )}
+
+          {/* TAB: DEDICATED SEPARATE SLOT TREE VIEW (NO TEXT ONLY UI & TREE) */}
+          {activeTab === 'slot-tree' && displayUser && (
+            <SlotTreeView
+              config={config}
+              user={displayUser}
+              slotLevel={selectedSlotLevel}
+              onSelectSlotLevel={(lvl) => setSelectedSlotLevel(lvl)}
+              onBackToDashboard={() => setActiveTab('dashboard')}
+              onActivateSlot={handleActivateSlot}
+              onPreviewMemberId={(id) => {
+                setPreviewIdInput(String(id));
+                loadPreviewMember(String(id));
+              }}
+              isActivating={isActivatingSlot}
+            />
+          )}
+
+          {/* TAB: FULL PICTURE OF TOTAL TEAM */}
+          {activeTab === 'team-picture' && (
+            <TotalTeamPicture
+              config={config}
+              currentUser={displayUser}
+              referrals={displayReferrals}
+              onPreviewMemberId={(id) => loadPreviewMember(id)}
+              onNavigateToSlots={() => setActiveTab('dashboard')}
             />
           )}
 

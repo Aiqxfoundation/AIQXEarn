@@ -1,50 +1,67 @@
 /**
- * AIQX Foundation Matrix X & Referral Engine
- * Complete 14-Level Doubling Matrix, Permanent Sequential ID Network,
- * Spillover placement, Auto Crossover Split, and Treasury Slot Accounting.
+ * AIQX Foundation 12-Slot Independent Matrix System
+ * - Pure Slot-based Architecture: No multi-level dependency.
+ * - Every slot higher than before (doubling: 100, 200, 400 ... 204,800 AIQX).
+ * - Everyone earns under the exact same opportunity:
+ *   - Slot 1: 2 Direct Spots + 1 Recycling Spot (3 spots total)
+ *   - Slot 2: 3 Direct Spots + 1 Recycling Spot (4 spots total)
+ *   - Slot 3: 4 Direct Spots + 1 Recycling Spot (5 spots total)
+ *   - Slot 4: 4 Direct Spots + 1 Recycling Spot (5 spots total)
+ *   - Slots 5-12: Scaling direct spots + 1 Recycling Spot
+ * - 12 Slots Total
+ * - Exact Recycling Logic Preserved:
+ *   50% to nearest qualified upline (with crossover search)
+ *   10% to Protocol Treasury
+ *   40% to Top 3 Downline Leaders (20%, 12%, 8%)
  */
 
 export const OFFICIAL_TREASURY_WALLET = '2SSHcFVHfiCdxYUyBwBWzULaAjQbixujKZCSKwwT8n1o';
 export const GENESIS_ROOT_WALLET = 'AiqxRoot11111111111111111111111111111111111';
 
-export interface MatrixLevelConfig {
-  level: number;
-  slots: number;
-  directReward: number;      // 50 * 2^(level-1)
-  indirectReward: number;    // 30 * 2^(level-1)
-  thirdLineReward: number;   // 5 * 2^(level-1)
-  slotActivationFee: number; // 15 * 2^(level-1)
-  totalPackageFee: number;   // 100 * 2^(level-1)
+export interface MatrixSlotConfig {
+  slot: number;
+  level: number; // alias for compatibility
+  slots: number; // total spots capacity (directSpots + recyclingSpots)
+  directSpots: number;
+  recyclingSpots: number; // 1
+  directReward: number;
+  indirectReward: number;
+  thirdLineReward: number;
+  slotActivationFee: number;
+  totalPackageFee: number;
 }
+export type MatrixLevelConfig = MatrixSlotConfig;
 
 /**
- * 14-Level Doubling Matrix Specification Table
- * Capacity doubles at each level: L1=1, L2=2, L3=4, L4=8 ... L14=8192
+ * 12-Slot Independent Matrix Specification Table
+ * 12 Independent Slots with increasing package fees and direct + 1 recycling spot
  */
-export const MATRIX_LEVELS_CONFIG: MatrixLevelConfig[] = [
-  { level: 1,  slots: 1,    directReward: 50,     indirectReward: 30,     thirdLineReward: 5,     slotActivationFee: 15,     totalPackageFee: 100 },
-  { level: 2,  slots: 2,    directReward: 100,    indirectReward: 60,     thirdLineReward: 10,    slotActivationFee: 30,     totalPackageFee: 200 },
-  { level: 3,  slots: 4,    directReward: 200,    indirectReward: 120,    thirdLineReward: 20,    slotActivationFee: 60,     totalPackageFee: 400 },
-  { level: 4,  slots: 8,    directReward: 400,    indirectReward: 240,    thirdLineReward: 40,    slotActivationFee: 120,    totalPackageFee: 800 },
-  { level: 5,  slots: 16,   directReward: 800,    indirectReward: 480,    thirdLineReward: 80,    slotActivationFee: 240,    totalPackageFee: 1600 },
-  { level: 6,  slots: 32,   directReward: 1600,   indirectReward: 960,    thirdLineReward: 160,   slotActivationFee: 480,    totalPackageFee: 3200 },
-  { level: 7,  slots: 64,   directReward: 3200,   indirectReward: 1920,   thirdLineReward: 320,   slotActivationFee: 960,    totalPackageFee: 6400 },
-  { level: 8,  slots: 128,  directReward: 6400,   indirectReward: 3840,   thirdLineReward: 640,   slotActivationFee: 1920,   totalPackageFee: 12800 },
-  { level: 9,  slots: 256,  directReward: 12800,  indirectReward: 7680,   thirdLineReward: 1280,  slotActivationFee: 3840,   totalPackageFee: 25600 },
-  { level: 10, slots: 512,  directReward: 25600,  indirectReward: 15360,  thirdLineReward: 2560,  slotActivationFee: 7680,   totalPackageFee: 51200 },
-  { level: 11, slots: 1024, directReward: 51200,  indirectReward: 30720,  thirdLineReward: 5120,  slotActivationFee: 15360,  totalPackageFee: 102400 },
-  { level: 12, slots: 2048, directReward: 102400, indirectReward: 61440,  thirdLineReward: 10240, slotActivationFee: 30720,  totalPackageFee: 204800 },
-  { level: 13, slots: 4096, directReward: 204800, indirectReward: 122880, thirdLineReward: 20480, slotActivationFee: 61440,  totalPackageFee: 409600 },
-  { level: 14, slots: 8192, directReward: 409600, indirectReward: 245760, thirdLineReward: 40960, slotActivationFee: 122880, totalPackageFee: 819200 },
+export const MATRIX_SLOTS_CONFIG: MatrixSlotConfig[] = [
+  { slot: 1,  level: 1,  slots: 3,  directSpots: 2,  recyclingSpots: 1, directReward: 50,     indirectReward: 30,    thirdLineReward: 5,     slotActivationFee: 15,    totalPackageFee: 100 },
+  { slot: 2,  level: 2,  slots: 4,  directSpots: 3,  recyclingSpots: 1, directReward: 100,    indirectReward: 60,    thirdLineReward: 10,    slotActivationFee: 30,    totalPackageFee: 200 },
+  { slot: 3,  level: 3,  slots: 5,  directSpots: 4,  recyclingSpots: 1, directReward: 200,    indirectReward: 120,   thirdLineReward: 20,    slotActivationFee: 60,    totalPackageFee: 400 },
+  { slot: 4,  level: 4,  slots: 5,  directSpots: 4,  recyclingSpots: 1, directReward: 400,    indirectReward: 240,   thirdLineReward: 40,    slotActivationFee: 120,   totalPackageFee: 800 },
+  { slot: 5,  level: 5,  slots: 6,  directSpots: 5,  recyclingSpots: 1, directReward: 800,    indirectReward: 480,   thirdLineReward: 80,    slotActivationFee: 240,   totalPackageFee: 1600 },
+  { slot: 6,  level: 6,  slots: 6,  directSpots: 5,  recyclingSpots: 1, directReward: 1600,   indirectReward: 960,   thirdLineReward: 160,   slotActivationFee: 480,   totalPackageFee: 3200 },
+  { slot: 7,  level: 7,  slots: 7,  directSpots: 6,  recyclingSpots: 1, directReward: 3200,   indirectReward: 1920,  thirdLineReward: 320,   slotActivationFee: 960,   totalPackageFee: 6400 },
+  { slot: 8,  level: 8,  slots: 7,  directSpots: 6,  recyclingSpots: 1, directReward: 6400,   indirectReward: 3840,  thirdLineReward: 640,   slotActivationFee: 1920,  totalPackageFee: 12800 },
+  { slot: 9,  level: 9,  slots: 8,  directSpots: 7,  recyclingSpots: 1, directReward: 12800,  indirectReward: 7680,  thirdLineReward: 1280,  slotActivationFee: 3840,  totalPackageFee: 25600 },
+  { slot: 10, level: 10, slots: 8,  directSpots: 7,  recyclingSpots: 1, directReward: 25600,  indirectReward: 15360, thirdLineReward: 2560,  slotActivationFee: 7680,  totalPackageFee: 51200 },
+  { slot: 11, level: 11, slots: 9,  directSpots: 8,  recyclingSpots: 1, directReward: 51200,  indirectReward: 30720, thirdLineReward: 5120,  slotActivationFee: 15360, totalPackageFee: 102400 },
+  { slot: 12, level: 12, slots: 9,  directSpots: 8,  recyclingSpots: 1, directReward: 102400, indirectReward: 61440, thirdLineReward: 10240, slotActivationFee: 30720, totalPackageFee: 204800 },
 ];
 
-export function getMatrixLevelConfig(level: number): MatrixLevelConfig {
-  const cfg = MATRIX_LEVELS_CONFIG.find((l) => l.level === level);
+export const MATRIX_LEVELS_CONFIG: MatrixLevelConfig[] = MATRIX_SLOTS_CONFIG;
+
+export function getMatrixSlotConfig(slotNumber: number): MatrixSlotConfig {
+  const cfg = MATRIX_SLOTS_CONFIG.find((s) => s.slot === slotNumber || s.level === slotNumber);
   if (!cfg) {
-    throw new Error(`Invalid Matrix level: ${level}. Supported levels are 1 through 14.`);
+    throw new Error(`Invalid Matrix slot: ${slotNumber}. Supported slots are 1 through 12.`);
   }
   return cfg;
 }
+
+export const getMatrixLevelConfig = getMatrixSlotConfig;
 
 export interface SlotTracking {
   level: number;
@@ -622,8 +639,8 @@ export function calculateMatrixSpilloverPlacement(
     visited.add(currentId);
 
     const children = childrenMap.get(currentId) || [];
-    // Binary matrix branch capacity per node is 2
-    if (children.length < 2) {
+    // 3-wide matrix branch capacity per node (matching 1 leader -> 3 direct partners)
+    if (children.length < 3) {
       return currentId;
     }
 

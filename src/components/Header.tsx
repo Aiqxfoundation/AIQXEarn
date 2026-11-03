@@ -28,7 +28,7 @@ import { SolanaLogo } from './SolanaLogo';
 import { OFFICIAL_AIQX_MINT } from '../lib/marketData';
 import { OFFICIAL_TREASURY_WALLET } from '../lib/referral-engine';
 
-export type NavigationTab = 'dashboard' | 'terminal' | 'docs';
+export type NavigationTab = 'dashboard' | 'team-picture' | 'terminal' | 'docs' | 'slot-tree';
 
 interface HeaderProps {
   config: AppConfig;
@@ -38,6 +38,8 @@ interface HeaderProps {
   userWallet?: string;
   userId?: number;
   baseTokenPriceUsd?: number;
+  aiqxBalance?: number;
+  solBalance?: number;
   onOpenTokenGuide?: () => void;
   // Forsage Preview ID controls
   previewIdInput: string;
@@ -55,6 +57,8 @@ export const Header: FC<HeaderProps> = ({
   userWallet,
   userId,
   baseTokenPriceUsd = 0.0002613,
+  aiqxBalance = 0,
+  solBalance = 0,
   onOpenTokenGuide,
   previewIdInput,
   setPreviewIdInput,
@@ -62,15 +66,19 @@ export const Header: FC<HeaderProps> = ({
   isPreviewMode = false,
   onClearPreview,
 }) => {
-  const { publicKey } = useWallet();
+  const { publicKey, disconnect } = useWallet();
   const [isMenuOpen, setIsMenuOpen] = useState<boolean>(false);
   const [copiedRef, setCopiedRef] = useState<boolean>(false);
   const [copiedMint, setCopiedMint] = useState<boolean>(false);
+  const [showSearchModal, setShowSearchModal] = useState<boolean>(false);
 
   // Close drawer on ESC key
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
-      if (e.key === 'Escape') setIsMenuOpen(false);
+      if (e.key === 'Escape') {
+        setIsMenuOpen(false);
+        setShowSearchModal(false);
+      }
     };
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
@@ -97,6 +105,7 @@ export const Header: FC<HeaderProps> = ({
     e.preventDefault();
     if (previewIdInput.trim()) {
       onPreviewSubmit(previewIdInput.trim());
+      setShowSearchModal(false);
     }
   };
 
@@ -110,14 +119,21 @@ export const Header: FC<HeaderProps> = ({
     }
   };
 
-  // Strictly Dashboard, DEX, and Docs only
+  // Navigation Menu: Slots, Total Team Picture, DEX, and Docs
   const navMenuItems = [
     {
       id: 'dashboard' as NavigationTab,
-      label: 'Dashboard',
-      description: '14-Level Matrix, Slots, Network Track & Profits',
+      label: 'Slots',
+      description: '12 Independent Slots, Matrix Cycles & Profits',
       icon: Activity,
-      badge: 'Matrix',
+      badge: '12 Slots',
+    },
+    {
+      id: 'team-picture' as NavigationTab,
+      label: 'Team Picture',
+      description: 'Full Picture of Total Team Topology (1 Leader → 3 Directs → 9 Downlines)',
+      icon: Users,
+      badge: 'Total Team',
     },
     {
       id: 'terminal' as NavigationTab,
@@ -129,24 +145,24 @@ export const Header: FC<HeaderProps> = ({
     {
       id: 'docs' as NavigationTab,
       label: 'Docs',
-      description: 'Protocol Manifesto, 14-Level Math, Audit & Rules',
+      description: 'Protocol Manifesto, 12-Slot Math, Audit & Rules',
       icon: BookOpen,
-      badge: 'Knowledge',
+      badge: 'Rules',
     },
   ];
 
   return (
     <>
-      {/* Forsage-Style Top Bar with Vibrant Royal Blue Background */}
-      <header className="sticky top-0 z-40 w-full bg-[#2563EB] shadow-md border-b border-blue-600">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
+      {/* Forsage Dark Top Bar with Sleek Pills Matching Reference Screenshot */}
+      <header className="sticky top-0 z-40 w-full bg-[#0E121A] border-b border-[#1E2533] shadow-md">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between gap-3">
           {/* Left: Brand Emblem + Desktop Navigation Buttons */}
-          <div className="flex items-center space-x-3 sm:space-x-5">
+          <div className="flex items-center space-x-3 sm:space-x-5 shrink-0">
             <button
               onClick={() => handleNavClick('dashboard')}
               className="flex items-center space-x-2 focus:outline-none group cursor-pointer"
             >
-              <div className="w-8 h-8 rounded-full p-0.5 bg-white/20 group-hover:scale-105 transition-transform flex items-center justify-center shrink-0">
+              <div className="w-8 h-8 rounded-full p-0.5 bg-blue-600/30 border border-blue-500/40 group-hover:scale-105 transition-transform flex items-center justify-center shrink-0 shadow-[0_0_12px_rgba(37,99,235,0.3)]">
                 <img
                   src="/aiqx-logo.png"
                   alt="AIQX Emblem"
@@ -158,8 +174,8 @@ export const Header: FC<HeaderProps> = ({
               </span>
             </button>
 
-            {/* Desktop Quick Nav: Dashboard | DEX | Docs */}
-            <nav className="hidden md:flex items-center space-x-1 bg-blue-700/60 p-1 rounded-2xl border border-blue-400/30">
+            {/* Desktop Quick Nav: Slots | Team Picture | DEX | Docs */}
+            <nav className="hidden lg:flex items-center space-x-1 bg-[#141926] p-1 rounded-2xl border border-[#1E273A]">
               {navMenuItems.map((item) => {
                 const isActive = activeTab === item.id;
                 const Icon = item.icon;
@@ -169,8 +185,8 @@ export const Header: FC<HeaderProps> = ({
                     onClick={() => handleNavClick(item.id)}
                     className={`flex items-center space-x-1.5 px-3 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer ${
                       isActive
-                        ? 'bg-white text-blue-900 shadow-sm'
-                        : 'text-blue-100 hover:text-white hover:bg-blue-600/60'
+                        ? 'bg-blue-600 text-white shadow-sm'
+                        : 'text-[#8B949E] hover:text-white hover:bg-[#1E2538]'
                     }`}
                   >
                     <Icon className="w-3.5 h-3.5" />
@@ -179,66 +195,120 @@ export const Header: FC<HeaderProps> = ({
                 );
               })}
             </nav>
+          </div>
 
-            {/* Forsage Preview ID Search Bar */}
-            <form
-              onSubmit={handlePreviewFormSubmit}
-              className="flex items-center space-x-1.5 bg-blue-700/60 p-1 rounded-2xl border border-blue-400/40"
+          {/* Right Action: Network Pill, Balance Pill, SOL Pill, Wallet Pill, Search & Icons */}
+          <div className="flex items-center space-x-2 sm:space-x-2.5 overflow-x-auto no-scrollbar py-1">
+            {/* 1. Network Pill: Solana Mainnet (matches "Smart Chain" pill in reference image) */}
+            <div className="hidden sm:flex items-center space-x-2 px-3 py-1.5 rounded-2xl bg-[#141926] border border-[#1E273A] text-xs font-medium text-white shadow-sm shrink-0">
+              <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse shrink-0" />
+              <SolanaLogo className="w-3.5 h-3.5 text-blue-400" />
+              <span className="font-semibold text-white text-[11px] sm:text-xs">Solana</span>
+            </div>
+
+            {/* 2. AIQX Token Balance Pill (matches "298.30 BUSD" pill in reference image) */}
+            <div
+              title="Your AIQX Token Balance"
+              className="flex items-center space-x-1.5 px-2.5 sm:px-3 py-1.5 rounded-2xl bg-[#141926] border border-[#1E273A] text-xs font-mono text-white shadow-sm shrink-0"
             >
-              <span className="text-[11px] font-bold text-white px-1.5 hidden sm:inline">
-                Preview ID
+              <div className="w-4 h-4 rounded-full bg-amber-400/20 border border-amber-400/50 flex items-center justify-center text-[9px] font-black text-amber-300 shrink-0">
+                AI
+              </div>
+              <span className="font-black text-white text-[11px] sm:text-xs">
+                {aiqxBalance.toLocaleString(undefined, { maximumFractionDigits: 1 })}{' '}
+                <span className="text-[#8B949E] text-[10px] font-sans">AIQX</span>
               </span>
-              <input
-                type="text"
-                value={previewIdInput}
-                onChange={(e) => setPreviewIdInput(e.target.value)}
-                placeholder="1"
-                className="bg-blue-800 text-white font-mono font-bold text-xs px-2.5 py-1 rounded-xl border border-blue-400/30 w-14 sm:w-20 text-center focus:outline-none focus:ring-1 focus:ring-white placeholder:text-blue-300"
-              />
-              <button
-                type="submit"
-                className="bg-blue-300 hover:bg-white text-blue-900 font-extrabold text-xs px-2.5 py-1 rounded-xl transition-colors cursor-pointer shadow-sm"
-              >
-                Go
-              </button>
-            </form>
+            </div>
 
-            {/* Exit Preview pill button if in preview mode */}
+            {/* 3. SOL Native Balance Pill (matches "0.074 BNB" pill in reference image) */}
+            <div
+              title="Your SOL Balance"
+              className="hidden md:flex items-center space-x-1.5 px-3 py-1.5 rounded-2xl bg-[#141926] border border-[#1E273A] text-xs font-mono text-white shadow-sm shrink-0"
+            >
+              <div className="w-3.5 h-3.5 rounded-full bg-gradient-to-tr from-purple-500 to-cyan-400 flex items-center justify-center text-[8px] font-black text-white shrink-0">
+                S
+              </div>
+              <span className="font-bold text-white text-[11px] sm:text-xs">
+                {solBalance.toFixed(3)}{' '}
+                <span className="text-[#8B949E] text-[10px] font-sans">SOL</span>
+              </span>
+            </div>
+
+            {/* 4. Wallet Button / Connected Pill (matches "0xce...F5" in reference image) */}
+            <div className="wallet-btn-custom shrink-0">
+              <WalletMultiButton className="!bg-[#141926] !text-white !font-bold hover:!bg-[#1D2436] !h-9 !px-3 !rounded-2xl !text-xs !shadow-sm !border !border-[#1E273A]" />
+            </div>
+
+            {/* 5. Search Button for Preview ID (matches search icon in reference image) */}
+            <button
+              onClick={() => setShowSearchModal((prev) => !prev)}
+              className={`p-2 rounded-2xl border transition-colors cursor-pointer shrink-0 ${
+                showSearchModal || isPreviewMode
+                  ? 'bg-blue-600 text-white border-blue-500'
+                  : 'bg-[#141926] hover:bg-[#1D2436] text-[#8B949E] hover:text-white border-[#1E273A]'
+              }`}
+              title="Search Member ID / Preview Mode"
+            >
+              <Search className="w-4 h-4" />
+            </button>
+
+            {/* 6. Exit Preview pill button if in preview mode */}
             {isPreviewMode && (
               <button
                 onClick={onClearPreview}
-                className="px-2.5 py-1 rounded-xl bg-blue-900/80 hover:bg-blue-900 text-white font-mono text-xs flex items-center space-x-1 cursor-pointer transition-colors border border-blue-400/40"
+                className="px-2.5 py-1.5 rounded-2xl bg-amber-500/20 hover:bg-amber-500/30 text-amber-300 font-mono text-xs flex items-center space-x-1 cursor-pointer transition-colors border border-amber-500/40 shrink-0"
                 title="Exit Preview Mode"
               >
-                <span className="hidden md:inline">Exit</span>
-                <X className="w-3.5 h-3.5 text-blue-200" />
+                <span>Exit Preview</span>
+                <X className="w-3.5 h-3.5" />
               </button>
             )}
-          </div>
 
-          {/* Right Action: Connect Wallet & Mobile Menu Toggle */}
-          <div className="flex items-center space-x-3">
-            {/* Price Pill */}
-            <div className="hidden md:flex items-center space-x-1.5 px-3 py-1 rounded-xl bg-blue-700/60 border border-blue-400/30 text-xs font-mono text-white">
-              <span className="text-blue-200">AIQX:</span>
-              <span className="font-bold text-emerald-300">${baseTokenPriceUsd.toFixed(6)}</span>
-            </div>
-
-            {/* Connect Wallet Button (Forsage black button with white bold text) */}
-            <div className="wallet-btn-custom">
-              <WalletMultiButton className="!bg-[#0B0E14] !text-white !font-bold hover:!bg-[#151B26] !h-10 !px-4 !rounded-2xl !text-xs !shadow-lg border border-black/40" />
-            </div>
-
-            {/* Hamburger Button for Mobile */}
+            {/* 7. Mobile Hamburger Menu */}
             <button
               onClick={() => setIsMenuOpen(true)}
-              className="md:hidden p-2 rounded-xl bg-blue-700/60 hover:bg-blue-700 text-white border border-blue-400/40 cursor-pointer transition-colors flex items-center justify-center"
+              className="lg:hidden p-2 rounded-2xl bg-[#141926] hover:bg-[#1D2436] text-white border border-[#1E273A] cursor-pointer transition-colors shrink-0"
               aria-label="Open Navigation Menu"
             >
-              <Menu className="w-5 h-5 text-white" />
+              <Menu className="w-4 h-4 text-white" />
             </button>
           </div>
         </div>
+
+        {/* Quick Inline Search Drawer / Dropdown when search icon is clicked */}
+        {showSearchModal && (
+          <div className="border-t border-[#1E273A] bg-[#111622] py-2.5 px-4 animate-fadeIn">
+            <div className="max-w-xl mx-auto flex items-center justify-between gap-3">
+              <form
+                onSubmit={handlePreviewFormSubmit}
+                className="flex-1 flex items-center space-x-2 bg-[#0E121A] px-3 py-1.5 rounded-2xl border border-blue-500/40"
+              >
+                <Search className="w-4 h-4 text-blue-400 shrink-0" />
+                <span className="text-xs font-semibold text-[#8B949E] shrink-0">Member ID:</span>
+                <input
+                  type="text"
+                  value={previewIdInput}
+                  onChange={(e) => setPreviewIdInput(e.target.value)}
+                  placeholder="e.g. 1, 42434"
+                  autoFocus
+                  className="bg-transparent text-white font-mono font-bold text-xs flex-1 focus:outline-none placeholder:text-[#4A5568]"
+                />
+                <button
+                  type="submit"
+                  className="px-3 py-1 rounded-xl bg-blue-600 hover:bg-blue-500 text-white font-bold text-xs cursor-pointer transition-colors shadow-sm"
+                >
+                  Inspect Matrix
+                </button>
+              </form>
+              <button
+                onClick={() => setShowSearchModal(false)}
+                className="p-1.5 rounded-xl text-[#8B949E] hover:text-white hover:bg-[#1A2232] cursor-pointer"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+          </div>
+        )}
       </header>
 
       {/* Hamburger Drawer Modal */}

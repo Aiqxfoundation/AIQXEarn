@@ -63,35 +63,36 @@ test('Mechanism 1: Initial Joining when upline 2 & 3 missing - Treasury still ge
   assert.equal(dist.totalAmount, 100);
 });
 
-test('14-Level Doubling Matrix Math Table Verification', () => {
-  assert.equal(MATRIX_LEVELS_CONFIG.length, 14);
+test('12-Slot Independent System Math Table Verification', () => {
+  assert.equal(MATRIX_LEVELS_CONFIG.length, 12);
 
-  // L1: 1 slot, Direct: 50, Indirect: 30, 3rd: 5, Slot Fee: 15, Total: 100
-  const l1 = getMatrixLevelConfig(1);
-  assert.equal(l1.slots, 1);
-  assert.equal(l1.directReward, 50);
-  assert.equal(l1.indirectReward, 30);
-  assert.equal(l1.thirdLineReward, 5);
-  assert.equal(l1.slotActivationFee, 15);
-  assert.equal(l1.totalPackageFee, 100);
+  // Slot 1: 3 spots total (2 direct + 1 recycling), Package Fee: 100 AIQX
+  const s1 = getMatrixLevelConfig(1);
+  assert.equal(s1.slots, 3);
+  assert.equal(s1.directSpots, 2);
+  assert.equal(s1.recyclingSpots, 1);
+  assert.equal(s1.totalPackageFee, 100);
 
-  // L2: 2 slots, Direct: 100, Indirect: 60, 3rd: 10, Slot Fee: 30, Total: 200
-  const l2 = getMatrixLevelConfig(2);
-  assert.equal(l2.slots, 2);
-  assert.equal(l2.directReward, 100);
-  assert.equal(l2.indirectReward, 60);
-  assert.equal(l2.thirdLineReward, 10);
-  assert.equal(l2.slotActivationFee, 30);
-  assert.equal(l2.totalPackageFee, 200);
+  // Slot 2: 4 spots total (3 direct + 1 recycling), Package Fee: 200 AIQX
+  const s2 = getMatrixLevelConfig(2);
+  assert.equal(s2.slots, 4);
+  assert.equal(s2.directSpots, 3);
+  assert.equal(s2.recyclingSpots, 1);
+  assert.equal(s2.totalPackageFee, 200);
 
-  // L14: 8,192 slots, Direct: 409,600, Indirect: 245,760, 3rd: 40,960, Slot Fee: 122,880, Total: 819,200
-  const l14 = getMatrixLevelConfig(14);
-  assert.equal(l14.slots, 8192);
-  assert.equal(l14.directReward, 409600);
-  assert.equal(l14.indirectReward, 245760);
-  assert.equal(l14.thirdLineReward, 40960);
-  assert.equal(l14.slotActivationFee, 122880);
-  assert.equal(l14.totalPackageFee, 819200);
+  // Slot 3: 5 spots total (4 direct + 1 recycling), Package Fee: 400 AIQX
+  const s3 = getMatrixLevelConfig(3);
+  assert.equal(s3.slots, 5);
+  assert.equal(s3.directSpots, 4);
+  assert.equal(s3.recyclingSpots, 1);
+  assert.equal(s3.totalPackageFee, 400);
+
+  // Slot 12: 9 spots total (8 direct + 1 recycling), Package Fee: 204,800 AIQX
+  const s12 = getMatrixLevelConfig(12);
+  assert.equal(s12.slots, 9);
+  assert.equal(s12.directSpots, 8);
+  assert.equal(s12.recyclingSpots, 1);
+  assert.equal(s12.totalPackageFee, 204800);
 });
 
 test('Auto Crossover Split: Qualified vs Unqualified Uplines', () => {
@@ -130,14 +131,15 @@ test('Auto Crossover Split: Qualified vs Unqualified Uplines', () => {
   assert.equal(unallocated?.wallet, WALLET_L2);
 });
 
-test('Spillover breadth-first placement', () => {
+test('Spillover breadth-first placement with 3-wide tree branch capacity', () => {
   const users: UserRecord[] = [
     { wallet: 'W1', id: 1, upline1: null, upline2: null, upline3: null, joinTime: '', joinSignature: '' },
     { wallet: 'W2', id: 2, matrixParentId: 1, sponsorId: 1, upline1: 'W1', upline2: null, upline3: null, joinTime: '', joinSignature: '' },
     { wallet: 'W3', id: 3, matrixParentId: 1, sponsorId: 1, upline1: 'W1', upline2: null, upline3: null, joinTime: '', joinSignature: '' },
+    { wallet: 'W4', id: 4, matrixParentId: 1, sponsorId: 1, upline1: 'W1', upline2: null, upline3: null, joinTime: '', joinSignature: '' },
   ];
 
-  // Node 1 has 2 children (Node 2 and Node 3), next placement must spill over under Node 2
+  // Node 1 has 3 children (Node 2, 3, 4), so next placement spills over under Node 2
   const nextParent = calculateMatrixSpilloverPlacement(1, users);
   assert.equal(nextParent, 2);
 });

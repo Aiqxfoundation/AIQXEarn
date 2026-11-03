@@ -177,12 +177,12 @@ export const ForsageSlotModal: FC<ForsageSlotModalProps> = ({
         <div className="flex items-center justify-between p-5 sm:p-6 border-b border-[#1A2332] bg-[#0E131C] shrink-0">
           <div className="flex items-center space-x-3.5">
             <div className="w-12 h-12 rounded-2xl bg-gradient-to-br from-[#F5A623]/20 to-transparent border border-[#F5A623]/40 flex items-center justify-center font-mono font-black text-xl text-[#F5A623] shadow-[0_0_15px_rgba(245,166,35,0.25)]">
-              L{levelConfig.level}
+              Slot {levelConfig.level}
             </div>
             <div>
               <div className="flex items-center space-x-2">
                 <h2 className="text-xl font-bold text-white tracking-tight">
-                  Matrix Slot Level {levelConfig.level}
+                  Independent Slot {levelConfig.level}
                 </h2>
                 {isUnlocked ? (
                   <span className="flex items-center space-x-1 px-2.5 py-0.5 rounded-full text-[11px] font-mono font-bold bg-emerald-500/15 text-emerald-400 border border-emerald-500/30">
@@ -191,7 +191,7 @@ export const ForsageSlotModal: FC<ForsageSlotModalProps> = ({
                   </span>
                 ) : isNextInLine ? (
                   <span className="px-2.5 py-0.5 rounded-full text-[11px] font-mono font-bold bg-[#F5A623]/15 text-[#F5A623] border border-[#F5A623]/30">
-                    Next to Upgrade
+                    Next to Activate
                   </span>
                 ) : (
                   <span className="px-2.5 py-0.5 rounded-full text-[11px] font-mono font-bold bg-[#1C2533] text-[#8B949E] border border-[#2B384D]">
@@ -200,7 +200,7 @@ export const ForsageSlotModal: FC<ForsageSlotModalProps> = ({
                 )}
               </div>
               <p className="text-xs text-[#8B949E] mt-0.5">
-                Forsage-Architecture Doubling Capacity: {levelConfig.slots.toLocaleString()} Spots | Cycle Automation
+                Slot Capacity: {levelConfig.directSpots || levelConfig.slots - 1} Direct Spots + 1 Recycling Spot ({levelConfig.slots} Spots Total) | Exact Residual Cycle Automation
               </p>
             </div>
           </div>
