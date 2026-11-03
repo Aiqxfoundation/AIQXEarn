@@ -9,19 +9,8 @@ import { DocsSection } from './components/DocsSection';
 import { RealCandlestickChart } from './components/RealCandlestickChart';
 import { RealSwapTerminal } from './components/RealSwapTerminal';
 import { JoinSection } from './components/JoinSection';
-import { SystemPoolSection } from './components/SystemPoolSection';
 import { SolanaLogo } from './components/SolanaLogo';
 import { TokenGuideModal } from './components/TokenGuideModal';
-
-// AIQX Foundation Matrix Program Components
-import { FoundationOverview } from './components/matrix/FoundationOverview';
-import { MatrixXSection } from './components/matrix/MatrixXSection';
-import { MyNetworkSection } from './components/matrix/MyNetworkSection';
-import { MySlotsSection } from './components/matrix/MySlotsSection';
-import { CrossoverSection } from './components/matrix/CrossoverSection';
-import { EarningsSection } from './components/matrix/EarningsSection';
-import { ContributeSection } from './components/matrix/ContributeSection';
-import { TransactionsSection } from './components/matrix/TransactionsSection';
 
 import {
   DEFAULT_CONFIG,
@@ -55,6 +44,7 @@ function AppContent() {
   const [config, setConfig] = useState<AppConfig>(DEFAULT_CONFIG);
   const [activeTab, setActiveTab] = useState<NavigationTab>('dashboard');
   const [isTokenGuideOpen, setIsTokenGuideOpen] = useState<boolean>(false);
+  const [isJoinModalOpen, setIsJoinModalOpen] = useState<boolean>(false);
 
   // Live GeckoTerminal Pool Metrics
   const [poolMetrics, setPoolMetrics] = useState<PoolMetrics>(DEFAULT_POOL_METRICS);
@@ -78,12 +68,16 @@ function AppContent() {
     crossoverEarnings?: number;
     contributionEarnings?: number;
     totalEarnings: number;
+    uplineRecycleEarnings?: number;
+    downlineRewardEarnings?: number;
     history: EarningsRecord[];
   }>({
     l1Earnings: 0,
     l2Earnings: 0,
     l3Earnings: 0,
     crossoverEarnings: 0,
+    uplineRecycleEarnings: 0,
+    downlineRewardEarnings: 0,
     contributionEarnings: 0,
     totalEarnings: 0,
     history: [],
@@ -325,7 +319,7 @@ function AppContent() {
 
         {/* Center / Right Operational Viewport */}
         <main className="flex-1 min-w-0">
-          {/* TAB 1: FORSAGE DASHBOARD */}
+          {/* TAB 1: UNIFIED FORSAGE MATRIX DASHBOARD */}
           {activeTab === 'dashboard' && displayUser && (
             <ForsageDashboard
               config={config}
@@ -340,33 +334,16 @@ function AppContent() {
                 setPreviewIdInput(String(id));
                 loadPreviewMember(String(id));
               }}
-              onNavigateToMatrix={() => setActiveTab('matrix-x')}
-              onNavigateToPartners={() => setActiveTab('my-network')}
               onNavigateToDocs={() => setActiveTab('docs')}
-              onNavigateToContribute={() => setActiveTab('contribute')}
-              onNavigateToJoin={() => setActiveTab('referrals')}
-              onInspectSlotLevel={(lvl) => {
-                setActiveTab('matrix-x');
-              }}
-            />
-          )}
-
-          {/* TAB 2: MATRIX X (14-LEVEL FORSAGE SLOTS) */}
-          {activeTab === 'matrix-x' && (
-            <MatrixXSection
-              config={config}
-              userActiveLevels={displayUser?.activeLevels || [1]}
-              aiqxBalance={aiqxBalance}
-              userWallet={displayUser?.wallet}
-              onUpgradeSuccess={() => {
+              onNavigateToJoin={() => setIsJoinModalOpen(true)}
+              onRefreshData={() => {
                 loadUserData();
                 loadPlatformData();
               }}
-              onNavigateToJoin={() => setActiveTab('referrals')}
             />
           )}
 
-          {/* TAB 3: TRADING TERMINAL & SWAP */}
+          {/* TAB 2: TRADING TERMINAL & SWAP */}
           {activeTab === 'terminal' && (
             <div className="space-y-5">
               <div className="grid grid-cols-1 lg:grid-cols-12 gap-5">
@@ -388,111 +365,60 @@ function AppContent() {
             </div>
           )}
 
-          {/* TAB 4: PARTNERS & NETWORK TREE */}
-          {activeTab === 'my-network' && (
-            <MyNetworkSection
-              config={config}
-              user={displayUser}
-              referrals={displayReferrals}
-              onNavigateToReferrals={() => setActiveTab('referrals')}
-            />
-          )}
-
-          {/* TAB 5: MY SLOTS */}
-          {activeTab === 'my-slots' && (
-            <MySlotsSection
-              config={config}
-              user={displayUser}
-              aiqxBalance={aiqxBalance}
-              onNavigateToMatrix={() => setActiveTab('matrix-x')}
-            />
-          )}
-
-          {/* TAB 6: DEDICATED INFORMATION & DOCS */}
-          {(activeTab === 'docs' || activeTab === 'foundation') && (
+          {/* TAB 3: DEDICATED INFORMATION & DOCS */}
+          {activeTab === 'docs' && (
             <DocsSection
               config={config}
-              onNavigateToMatrix={() => setActiveTab('matrix-x')}
-              onNavigateToJoin={() => setActiveTab('referrals')}
-              onNavigateToContribute={() => setActiveTab('contribute')}
+              onNavigateToMatrix={() => setActiveTab('dashboard')}
+              onNavigateToJoin={() => setIsJoinModalOpen(true)}
             />
           )}
+        </main>
+      </div>
 
-          {/* TAB 7: STATS & TRANSACTIONS */}
-          {activeTab === 'transactions' && (
-            <TransactionsSection
-              config={config}
-              earningsHistory={displayEarnings.history}
-              userWallet={displayUser?.wallet}
-            />
-          )}
-
-          {/* TAB 8: CONTRIBUTE TO EARN */}
-          {activeTab === 'contribute' && (
-            <ContributeSection
-              config={config}
-              user={displayUser}
-            />
-          )}
-
-          {/* TAB 9: PROTOCOL SYSTEM POOL */}
-          {activeTab === 'system-pool' && (
-            <div className="max-w-4xl mx-auto py-2">
-              <SystemPoolSection
-                config={config}
-                poolData={stats?.systemPool || null}
-              />
-            </div>
-          )}
-
-          {/* TAB 10: JOIN / ONBOARDING ACTIVATION */}
-          {activeTab === 'referrals' && (
-            <div className="space-y-6 max-w-4xl mx-auto py-2">
-              <div className="text-center space-y-1">
-                <h2 className="text-2xl font-black text-white">AIQX Matrix X Activation</h2>
-                <p className="text-xs text-[#8B949E]">
-                  100 AIQX Initial Activation with permanent sequential ID and automated 3-tier distribution.
-                </p>
+      {/* Modal Join / Onboarding (Keeps everything on single dashboard) */}
+      {isJoinModalOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm animate-fadeIn">
+          <div className="relative w-full max-w-xl bg-[#0D1117] border border-[#1E2533] rounded-3xl p-6 shadow-2xl max-h-[90vh] overflow-y-auto">
+            <div className="flex items-center justify-between pb-4 border-b border-[#1E2533]">
+              <div className="flex items-center space-x-2">
+                <span className="w-2.5 h-2.5 rounded-full bg-blue-500 animate-pulse" />
+                <h3 className="text-lg font-black text-white">Join AIQX Matrix X</h3>
               </div>
+              <button
+                onClick={() => setIsJoinModalOpen(false)}
+                className="p-1.5 rounded-xl bg-[#171D27] hover:bg-[#202735] text-[#8B949E] hover:text-white transition-colors cursor-pointer"
+              >
+                ✕
+              </button>
+            </div>
 
+            <div className="pt-4">
               <JoinSection
                 config={config}
-                initialReferral={referralParam || '1'}
+                initialReferral={referralParam || String(displayUser?.id || 1)}
                 aiqxBalance={aiqxBalance}
                 solBalance={solBalance}
                 isRegistered={isRegistered}
                 onJoinSuccess={() => {
                   loadUserData();
                   loadPlatformData();
-                  setActiveTab('matrix-x');
+                  setIsJoinModalOpen(false);
                 }}
                 onRefreshBalances={loadUserData}
-                onGoToDex={() => setActiveTab('terminal')}
-                onGoToDashboard={() => setActiveTab('dashboard')}
+                onGoToDex={() => {
+                  setIsJoinModalOpen(false);
+                  setActiveTab('terminal');
+                }}
+                onGoToDashboard={() => {
+                  setIsJoinModalOpen(false);
+                  setActiveTab('dashboard');
+                }}
               />
             </div>
-          )}
-
-          {/* TAB 11: CROSSOVER */}
-          {activeTab === 'crossover' && (
-            <CrossoverSection
-              config={config}
-              user={displayUser}
-              onNavigateToMatrix={() => setActiveTab('matrix-x')}
-            />
-          )}
-
-          {/* TAB 12: EARNINGS */}
-          {activeTab === 'earnings' && (
-            <EarningsSection
-              config={config}
-              user={displayUser}
-              earnings={displayEarnings}
-              aiqxPriceUsd={poolMetrics.baseTokenPriceUsd}
-            />
-          )}
-        </main>
-      </div>
+          </div>
+        </div>
+      )}
 
       {/* Minimalist Footer */}
       <footer className="border-t border-[#1E2533] bg-[#0B0E14] py-4 text-xs text-[#8B949E] mt-auto">

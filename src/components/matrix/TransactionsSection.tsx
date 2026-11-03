@@ -29,6 +29,7 @@ export const TransactionsSection: FC<TransactionsSectionProps> = ({
   const filtered = earningsHistory.filter((tx) => {
     if (filterType === 'all') return true;
     if (filterType === 'joining') return tx.category === 'l1_reward' && tx.level === 1;
+    if (filterType === 'recycling') return tx.category === 'upline_recycle' || tx.category === 'downline_leader_reward';
     if (filterType === 'slot') return tx.level > 1;
     if (filterType === 'treasury') return tx.category === 'slot_fee_treasury';
     if (filterType === 'crossover') return tx.category === 'crossover_split';
@@ -48,7 +49,7 @@ export const TransactionsSection: FC<TransactionsSectionProps> = ({
           </div>
           <h1 className="text-2xl font-bold text-white tracking-tight">On-Chain Transactions</h1>
           <p className="text-xs text-[#8B949E]">
-            Immutable transaction records: Joining fees, 14-level slot activations, and strictly enforced Treasury transfers.
+            Immutable transaction records: Joining fees, 14-level slot activations, recycling, and Treasury transfers.
           </p>
         </div>
 
@@ -71,6 +72,7 @@ export const TransactionsSection: FC<TransactionsSectionProps> = ({
             {[
               { id: 'all', label: 'All Operations' },
               { id: 'joining', label: 'Joining (100 AIQX)' },
+              { id: 'recycling', label: 'Recycling (100 AIQX)' },
               { id: 'slot', label: 'Slot Upgrades' },
               { id: 'crossover', label: 'Crossover Splits' },
               { id: 'treasury', label: 'Treasury Transfers' },
@@ -111,6 +113,8 @@ export const TransactionsSection: FC<TransactionsSectionProps> = ({
                 {filtered.map((item, idx) => {
                   const isTreasury = item.category === 'slot_fee_treasury';
                   const isCrossover = item.category === 'crossover_split';
+                  const isRecycle = item.category === 'upline_recycle';
+                  const isLeaderReward = item.category === 'downline_leader_reward';
                   const isDirect = item.category === 'l1_reward';
 
                   return (
@@ -120,6 +124,10 @@ export const TransactionsSection: FC<TransactionsSectionProps> = ({
                           className={`px-2 py-0.5 rounded text-[10px] font-bold border ${
                             isTreasury
                               ? 'text-emerald-400 bg-emerald-500/10 border-emerald-500/30'
+                              : isRecycle
+                              ? 'text-cyan-400 bg-cyan-500/10 border-cyan-500/30'
+                              : isLeaderReward
+                              ? 'text-emerald-400 bg-emerald-500/10 border-emerald-500/30'
                               : isCrossover
                               ? 'text-purple-400 bg-purple-500/10 border-purple-500/30'
                               : isDirect
@@ -128,7 +136,11 @@ export const TransactionsSection: FC<TransactionsSectionProps> = ({
                           }`}
                         >
                           {isTreasury
-                            ? 'Slot Fee (Treasury)'
+                            ? 'Treasury (Recycle/Slot)'
+                            : isRecycle
+                            ? `Upline Recycle (L${item.level})`
+                            : isLeaderReward
+                            ? `Downline Reward (L${item.level})`
                             : isCrossover
                             ? 'Crossover Split'
                             : `Level ${item.level} Reward`}

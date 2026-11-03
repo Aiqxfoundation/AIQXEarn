@@ -26,7 +26,7 @@
         { "name": "upline1TokenAccount", "isMut": true, "isSigner": false },
         { "name": "upline2TokenAccount", "isMut": true, "isSigner": false },
         { "name": "upline3TokenAccount", "isMut": true, "isSigner": false },
-        { "name": "treasuryTokenAccount", "isMut": true, "isSigner": false },
+        { "name": "slotActivationTokenAccount", "isMut": true, "isSigner": false },
         { "name": "tokenProgram", "isMut": false, "isSigner": false },
         { "name": "systemProgram", "isMut": false, "isSigner": false }
       ],
@@ -46,6 +46,25 @@
         { "name": "recipient2TokenAccount", "isMut": true, "isSigner": false },
         { "name": "recipient3TokenAccount", "isMut": true, "isSigner": false },
         { "name": "treasuryTokenAccount", "isMut": true, "isSigner": false },
+        { "name": "tokenProgram", "isMut": false, "isSigner": false }
+      ],
+      "args": [
+        { "name": "targetLevel", "type": "u8" }
+      ]
+    },
+    {
+      "name": "recycleSlot",
+      "accounts": [
+        { "name": "programState", "isMut": true, "isSigner": false },
+        { "name": "userAccount", "isMut": true, "isSigner": false },
+        { "name": "slotRecord", "isMut": true, "isSigner": false },
+        { "name": "payer", "isMut": true, "isSigner": true },
+        { "name": "payerTokenAccount", "isMut": true, "isSigner": false },
+        { "name": "eligibleUplineTokenAccount", "isMut": true, "isSigner": false },
+        { "name": "treasuryTokenAccount", "isMut": true, "isSigner": false },
+        { "name": "leader1TokenAccount", "isMut": true, "isSigner": false },
+        { "name": "leader2TokenAccount", "isMut": true, "isSigner": false },
+        { "name": "leader3TokenAccount", "isMut": true, "isSigner": false },
         { "name": "tokenProgram", "isMut": false, "isSigner": false }
       ],
       "args": [

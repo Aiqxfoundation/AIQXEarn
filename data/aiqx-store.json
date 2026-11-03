@@ -11,10 +11,41 @@
       "upline3": null,
       "joinTime": "2025-01-01T00:00:00.000Z",
       "joinSignature": "GENESIS_BOOTSTRAP_INITIAL_SIGNATURE",
-      "activeLevels": [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14],
+      "activeLevels": [
+        1,
+        2,
+        3,
+        4,
+        5,
+        6,
+        7,
+        8,
+        9,
+        10,
+        11,
+        12,
+        13,
+        14
+      ],
       "slotRecords": {
-        "1": { "level": 1, "totalCapacity": 1, "filledCount": 1, "occupantIds": [2], "completedCycles": 1 },
-        "2": { "level": 2, "totalCapacity": 2, "filledCount": 1, "occupantIds": [2], "completedCycles": 0 }
+        "1": {
+          "level": 1,
+          "totalCapacity": 1,
+          "filledCount": 1,
+          "occupantIds": [
+            2
+          ],
+          "completedCycles": 1
+        },
+        "2": {
+          "level": 2,
+          "totalCapacity": 2,
+          "filledCount": 1,
+          "occupantIds": [
+            2
+          ],
+          "completedCycles": 0
+        }
       }
     },
     "User111111111111111111111111111111111111111": {
@@ -27,10 +58,25 @@
       "upline3": null,
       "joinTime": "2026-11-02T22:13:37.392Z",
       "joinSignature": "devnet_sig_123456789_abcdef",
-      "activeLevels": [1, 2],
+      "activeLevels": [
+        1,
+        2
+      ],
       "slotRecords": {
-        "1": { "level": 1, "totalCapacity": 1, "filledCount": 1, "occupantIds": [3], "completedCycles": 1 },
-        "2": { "level": 2, "totalCapacity": 2, "filledCount": 0, "occupantIds": [], "completedCycles": 0 }
+        "1": {
+          "level": 1,
+          "totalCapacity": 1,
+          "filledCount": 0,
+          "occupantIds": [],
+          "completedCycles": 2
+        },
+        "2": {
+          "level": 2,
+          "totalCapacity": 2,
+          "filledCount": 0,
+          "occupantIds": [],
+          "completedCycles": 0
+        }
       }
     },
     "User222222222222222222222222222222222222222": {
@@ -43,9 +89,17 @@
       "upline3": null,
       "joinTime": "2026-11-02T22:14:00.503Z",
       "joinSignature": "devnet_sig_user2_join_9999999",
-      "activeLevels": [1],
+      "activeLevels": [
+        1
+      ],
       "slotRecords": {
-        "1": { "level": 1, "totalCapacity": 1, "filledCount": 0, "occupantIds": [], "completedCycles": 0 }
+        "1": {
+          "level": 1,
+          "totalCapacity": 1,
+          "filledCount": 0,
+          "occupantIds": [],
+          "completedCycles": 0
+        }
       }
     }
   },
@@ -82,6 +136,66 @@
       "transactionSignature": "devnet_sig_user2_join_9999999",
       "timestamp": "2026-11-02T22:14:00.503Z",
       "category": "l2_reward"
+    },
+    {
+      "id": "sig_recycle_1_1793725219493_upline_recycle",
+      "wallet": "AiqxRoot11111111111111111111111111111111111",
+      "sourceWallet": "User111111111111111111111111111111111111111",
+      "sourceUserId": 2,
+      "level": 1,
+      "amount": 50,
+      "transactionSignature": "sig_recycle_1_1793725219493",
+      "timestamp": "2026-11-03T17:00:19.493Z",
+      "category": "upline_recycle",
+      "notes": "Same-Level Slot Recycling (50 AIQX) from Member #2 at Level 1"
+    },
+    {
+      "id": "sig_recycle_1_1793725219493_treasury_recycle",
+      "wallet": "2SSHcFVHfiCdxYUyBwBWzULaAjQbixujKZCSKwwT8n1o",
+      "sourceWallet": "User111111111111111111111111111111111111111",
+      "sourceUserId": 2,
+      "level": 1,
+      "amount": 10,
+      "transactionSignature": "sig_recycle_1_1793725219493",
+      "timestamp": "2026-11-03T17:00:19.493Z",
+      "category": "slot_fee_treasury",
+      "notes": "Protocol Treasury (10 AIQX) from Member #2 Level 1 Slot Recycling"
+    },
+    {
+      "id": "sig_recycle_1_1793725219493_leader_r1_User22",
+      "wallet": "User222222222222222222222222222222222222222",
+      "sourceWallet": "User111111111111111111111111111111111111111",
+      "sourceUserId": 2,
+      "level": 1,
+      "amount": 20,
+      "transactionSignature": "sig_recycle_1_1793725219493",
+      "timestamp": "2026-11-03T17:00:19.493Z",
+      "category": "downline_leader_reward",
+      "notes": "Downline Leader Rank 1 Reward (20 AIQX) from Member #2 Slot Recycling"
+    },
+    {
+      "id": "sig_recycle_1_1793725219493_leader_r2_User22",
+      "wallet": "User222222222222222222222222222222222222222",
+      "sourceWallet": "User111111111111111111111111111111111111111",
+      "sourceUserId": 2,
+      "level": 1,
+      "amount": 12,
+      "transactionSignature": "sig_recycle_1_1793725219493",
+      "timestamp": "2026-11-03T17:00:19.493Z",
+      "category": "downline_leader_reward",
+      "notes": "Downline Leader Rank 2 Reward (12 AIQX) from Member #2 Slot Recycling"
+    },
+    {
+      "id": "sig_recycle_1_1793725219493_leader_r3_User22",
+      "wallet": "User222222222222222222222222222222222222222",
+      "sourceWallet": "User111111111111111111111111111111111111111",
+      "sourceUserId": 2,
+      "level": 1,
+      "amount": 8,
+      "transactionSignature": "sig_recycle_1_1793725219493",
+      "timestamp": "2026-11-03T17:00:19.493Z",
+      "category": "downline_leader_reward",
+      "notes": "Downline Leader Rank 3 Reward (8 AIQX) from Member #2 Slot Recycling"
     }
   ],
   "systemPool": [

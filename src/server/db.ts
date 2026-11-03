@@ -39,6 +39,7 @@ export interface AppDatabase {
   createUser(user: UserRecord): Promise<UserRecord>;
   getNextUserId(): Promise<number>;
   activateUserLevel(wallet: string, level: number): Promise<UserRecord>;
+  recycleSlot(wallet: string, level: number): Promise<{ user: UserRecord; cycle: number }>;
   isSignatureProcessed(signature: string): Promise<boolean>;
   recordProcessedTransaction(record: ProcessedTxRecord): Promise<void>;
   recordEarnings(earnings: EarningsRecord[]): Promise<void>;
@@ -285,6 +286,38 @@ class LocalFileDatabase implements AppDatabase {
     return user;
   }
 
+  async recycleSlot(wallet: string, level: number): Promise<{ user: UserRecord; cycle: number }> {
+    const user = this.data.users[wallet];
+    if (!user) {
+      throw new Error(`User with wallet ${wallet} not found`);
+    }
+
+    if (!user.slotRecords) user.slotRecords = {};
+    const cfg = MATRIX_LEVELS_CONFIG.find((l) => l.level === level);
+    const capacity = cfg ? cfg.slots : Math.pow(2, level - 1);
+
+    const prev = user.slotRecords[level] || {
+      level,
+      totalCapacity: capacity,
+      filledCount: 0,
+      occupantIds: [],
+      completedCycles: 0,
+    };
+
+    const newCycles = (prev.completedCycles || 0) + 1;
+    user.slotRecords[level] = {
+      level,
+      totalCapacity: capacity,
+      filledCount: 0, // NEW slot of SAME LEVEL opens with filledCount 0
+      occupantIds: [],
+      completedCycles: newCycles,
+    };
+
+    this.data.users[wallet] = user;
+    this.saveData();
+    return { user, cycle: newCycles };
+  }
+
   async isSignatureProcessed(signature: string): Promise<boolean> {
     return Boolean(this.data.processedSignatures[signature]);
   }
@@ -518,6 +551,10 @@ class SupabaseDatabaseAdapter implements AppDatabase {
 
   async activateUserLevel(wallet: string, level: number): Promise<UserRecord> {
     return this.localFallback.activateUserLevel(wallet, level);
+  }
+
+  async recycleSlot(wallet: string, level: number): Promise<{ user: UserRecord; cycle: number }> {
+    return this.localFallback.recycleSlot(wallet, level);
   }
 
   async isSignatureProcessed(signature: string): Promise<boolean> {

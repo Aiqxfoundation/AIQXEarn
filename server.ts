@@ -5,6 +5,9 @@ import { fileURLToPath } from 'node:url';
 import { getDatabase, GENESIS_WALLET, AppDatabase } from './src/server/db';
 import {
   calculateDistribution,
+  calculateSlotRecyclingDistribution,
+  findEligibleUplineForLevel,
+  getTop3DownlineLeaders,
   calculateMatrixLevelDistribution,
   calculateMatrixSpilloverPlacement,
   getMatrixLevelConfig,
@@ -448,6 +451,155 @@ app.post('/api/matrix/activate-level', async (req: Request, res: Response) => {
   }
 });
 
+// API: Same-Level Slot Recycling (100 AIQX Trigger)
+// Split of this 100 AIQX:
+// a) 50 AIQX to Eligible Upline (nearest qualified upline with same level active via crossover)
+// b) 10 AIQX to Treasury wallet (2SSHcFVHfiCdxYUyBwBWzULaAjQbixujKZCSKwwT8n1o)
+// c) 40 AIQX to Top 3 Leaders in user's OWN downline (Rank 1: 20, Rank 2: 12, Rank 3: 8)
+app.post('/api/matrix/recycle-slot', async (req: Request, res: Response) => {
+  try {
+    const { signature, wallet, level } = req.body;
+    const targetLevel = Number(level) || 1;
+
+    if (!wallet || !isValidSolanaAddress(wallet)) {
+      return res.status(400).json({ success: false, error: 'Valid Solana wallet address is required' });
+    }
+    if (targetLevel < 1 || targetLevel > 14) {
+      return res.status(400).json({ success: false, error: 'Level must be between 1 and 14' });
+    }
+
+    const user = await db.getUser(wallet);
+    if (!user) {
+      return res.status(404).json({ success: false, error: 'User wallet is not registered in AIQX' });
+    }
+
+    const allUsers = await db.getAllUsers();
+    const nowIso = new Date().toISOString();
+    const effectiveSig = signature && typeof signature === 'string' && signature.length > 20
+      ? signature
+      : `sig_recycle_${targetLevel}_${Date.now()}`;
+
+    // Verify on-chain transaction if user provided one
+    if (signature && signature.length > 20) {
+      const isProcessed = await db.isSignatureProcessed(signature);
+      if (isProcessed) {
+        return res.status(409).json({ success: false, error: 'This transaction signature has already been processed.' });
+      }
+
+      const verification = await verifier.verifySlotRecycleTransaction({
+        signature,
+        recyclingWallet: wallet,
+      });
+
+      if (!verification.success) {
+        return res.status(400).json({ success: false, error: `Recycle verification failed: ${verification.error}` });
+      }
+
+      await db.recordProcessedTransaction({
+        signature,
+        senderWallet: wallet,
+        amount: 100,
+        status: 'confirmed',
+        createdAt: nowIso,
+        type: 'slot_upgrade',
+      });
+    }
+
+    // Calculate Same-Level Slot Recycling Distribution (100 AIQX)
+    const recycleDist = calculateSlotRecyclingDistribution({
+      level: targetLevel,
+      recyclingUserWallet: wallet,
+      allUsers,
+      treasuryWallet: TREASURY_WALLET,
+      rootWallet: GENESIS_WALLET,
+    });
+
+    const earningsToRecord: EarningsRecord[] = [];
+
+    // a) 50 AIQX to Eligible Upline (with Crossover)
+    earningsToRecord.push({
+      id: `${effectiveSig}_upline_recycle`,
+      wallet: recycleDist.eligibleUpline.wallet,
+      sourceWallet: wallet,
+      sourceUserId: user.id,
+      level: targetLevel,
+      amount: recycleDist.eligibleUpline.amount,
+      transactionSignature: effectiveSig,
+      timestamp: nowIso,
+      category: 'upline_recycle',
+      notes: `Same-Level Slot Recycling (50 AIQX) from Member #${user.id} at Level ${targetLevel}${recycleDist.eligibleUpline.isCrossover ? ' [CROSSOVER]' : ''}`,
+    });
+
+    // b) 10 AIQX to Protocol Treasury Wallet
+    earningsToRecord.push({
+      id: `${effectiveSig}_treasury_recycle`,
+      wallet: TREASURY_WALLET,
+      sourceWallet: wallet,
+      sourceUserId: user.id,
+      level: targetLevel,
+      amount: recycleDist.treasury.amount,
+      transactionSignature: effectiveSig,
+      timestamp: nowIso,
+      category: 'slot_fee_treasury',
+      notes: `Protocol Treasury (10 AIQX) from Member #${user.id} Level ${targetLevel} Slot Recycling`,
+    });
+
+    // c) 40 AIQX to Top 3 Leaders in user's OWN downline (20, 12, 8 AIQX)
+    for (const leader of recycleDist.downlineLeaders) {
+      earningsToRecord.push({
+        id: `${effectiveSig}_leader_r${leader.rank}_${leader.wallet.slice(0, 6)}`,
+        wallet: leader.wallet,
+        sourceWallet: wallet,
+        sourceUserId: user.id,
+        level: targetLevel,
+        amount: leader.amount,
+        transactionSignature: effectiveSig,
+        timestamp: nowIso,
+        category: 'downline_leader_reward',
+        notes: `Downline Leader Rank ${leader.rank} Reward (${leader.amount} AIQX) from Member #${user.id} Slot Recycling`,
+      });
+    }
+
+    await db.recordEarnings(earningsToRecord);
+
+    // Increment completedCycles, reset filledCount to 0, open NEW slot of SAME LEVEL
+    const recycleResult = await db.recycleSlot(wallet, targetLevel);
+
+    res.json({
+      success: true,
+      message: `Level ${targetLevel} slot successfully recycled! New cycle #${recycleResult.cycle} opened.`,
+      distribution: recycleDist,
+      user: recycleResult.user,
+      cycle: recycleResult.cycle,
+    });
+  } catch (err: any) {
+    console.error('[API /matrix/recycle-slot] Error:', err);
+    res.status(500).json({ success: false, error: err.message });
+  }
+});
+
+// API: Query Top 3 Downline Leaders for a user (to preview who receives the 40 AIQX)
+app.get('/api/matrix/downline-leaders/:walletOrId', async (req: Request, res: Response) => {
+  try {
+    const walletOrId = req.params.walletOrId;
+    const user = await db.getUserByWalletOrId(walletOrId);
+    if (!user) {
+      return res.status(404).json({ success: false, error: 'User not found' });
+    }
+
+    const allUsers = await db.getAllUsers();
+    const leaders = getTop3DownlineLeaders(user.wallet, allUsers, GENESIS_WALLET);
+
+    res.json({
+      success: true,
+      user: { id: user.id, wallet: user.wallet },
+      leaders,
+    });
+  } catch (err: any) {
+    res.status(500).json({ success: false, error: err.message });
+  }
+});
+
 // API: Contribute to Earn List
 app.get('/api/contribute/list', async (req: Request, res: Response) => {
   try {
@@ -686,12 +838,13 @@ app.get('/api/referral/resolve', async (req: Request, res: Response) => {
       upline3: refUser.upline2,
     };
 
-    // Calculate level 1 distribution (Slot activation fee goes directly to Treasury)
+    // Calculate level 1 distribution (Mechanism 1: Treasury gets 0 AIQX)
     const distribution = calculateDistribution(
       hierarchy.upline1,
       hierarchy.upline2,
       hierarchy.upline3,
-      TREASURY_WALLET
+      TREASURY_WALLET,
+      GENESIS_WALLET
     );
 
     const allUsers = await db.getAllUsers();
@@ -743,11 +896,17 @@ app.get('/api/user/:wallet', async (req: Request, res: Response) => {
     let l2Earnings = 0;
     let l3Earnings = 0;
     let crossoverEarnings = 0;
+    let uplineRecycleEarnings = 0;
+    let downlineRewardEarnings = 0;
     let contributionEarnings = 0;
 
     for (const earn of earnings) {
       if (earn.category === 'crossover_split') {
         crossoverEarnings += Number(earn.amount);
+      } else if (earn.category === 'upline_recycle') {
+        uplineRecycleEarnings += Number(earn.amount);
+      } else if (earn.category === 'downline_leader_reward') {
+        downlineRewardEarnings += Number(earn.amount);
       } else if (earn.category === 'contribution_grant') {
         contributionEarnings += Number(earn.amount);
       } else if (earn.level === 1 || earn.category === 'l1_reward') {
@@ -759,7 +918,14 @@ app.get('/api/user/:wallet', async (req: Request, res: Response) => {
       }
     }
 
-    const totalEarnings = l1Earnings + l2Earnings + l3Earnings + crossoverEarnings + contributionEarnings;
+    const totalEarnings =
+      l1Earnings +
+      l2Earnings +
+      l3Earnings +
+      crossoverEarnings +
+      uplineRecycleEarnings +
+      downlineRewardEarnings +
+      contributionEarnings;
 
     res.json({
       success: true,
@@ -770,6 +936,8 @@ app.get('/api/user/:wallet', async (req: Request, res: Response) => {
         l2Earnings,
         l3Earnings,
         crossoverEarnings,
+        uplineRecycleEarnings,
+        downlineRewardEarnings,
         contributionEarnings,
         totalEarnings,
         history: earnings,
@@ -841,8 +1009,8 @@ app.post('/api/join/verify-and-register', async (req: Request, res: Response) =>
     const upline2 = sponsor.upline1 || null;
     const upline3 = sponsor.upline2 || null;
 
-    // Slot activation fee (15 AIQX) transfers directly to Treasury wallet
-    const distribution = calculateDistribution(upline1, upline2, upline3, TREASURY_WALLET);
+    // Mechanism 1 Initial Joining: 50 direct, 30 indirect, 5 third, 15 slot activation, 0 Treasury
+    const distribution = calculateDistribution(upline1, upline2, upline3, TREASURY_WALLET, GENESIS_WALLET);
 
     // 4. Verify Real On-Chain SPL Token Transaction
     const verification = await verifier.verifyJoiningTransaction({
@@ -942,18 +1110,19 @@ app.post('/api/join/verify-and-register', async (req: Request, res: Response) =>
       });
     }
 
-    // STRICT RULE: Slot Activation Fee (15 AIQX) transfers strictly to Treasury address
+    // MECHANISM 1 RULE: Treasury gets 0 from initial joining.
+    // 15 AIQX activates the new member's initial Level 1 slot.
     earningsToRecord.push({
-      id: `${signature}_treasury_slot_fee`,
-      wallet: TREASURY_WALLET,
+      id: `${signature}_slot_activation`,
+      wallet: joiningWallet,
       sourceWallet: joiningWallet,
       sourceUserId: nextUserId,
       level: 1,
       amount: 15,
       transactionSignature: signature,
       timestamp: nowIso,
-      category: 'slot_fee_treasury',
-      notes: 'Initial Slot Activation Fee sent to Treasury',
+      category: 'system_fixed',
+      notes: `Level 1 Slot Activation Reserve (15 AIQX) for Member #${nextUserId} (Treasury receives 0)`,
     });
 
     await db.recordEarnings(earningsToRecord);

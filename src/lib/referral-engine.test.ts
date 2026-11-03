@@ -2,6 +2,9 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import {
   calculateDistribution,
+  calculateSlotRecyclingDistribution,
+  findEligibleUplineForLevel,
+  getTop3DownlineLeaders,
   calculateMatrixLevelDistribution,
   calculateMatrixSpilloverPlacement,
   getMatrixLevelConfig,
@@ -29,7 +32,7 @@ test('validates valid and invalid Solana addresses correctly', () => {
   assert.equal(isValidSolanaAddress(null), false);
 });
 
-test('Scenario 1: Full referral chain (L1, L2, L3 all exist)', () => {
+test('Mechanism 1: Initial Joining (100 AIQX) - 50 Direct, 30 Indirect, 5 Third, 15 Slot Activation, 0 Treasury', () => {
   const dist = calculateDistribution(WALLET_L1, WALLET_L2, WALLET_L3, TREASURY);
   assert.equal(dist.l1Amount, 50);
   assert.equal(dist.l1Wallet, WALLET_L1);
@@ -42,25 +45,21 @@ test('Scenario 1: Full referral chain (L1, L2, L3 all exist)', () => {
   assert.equal(dist.l3Wallet, WALLET_L3);
   assert.equal(dist.l3IsSystemReserve, false);
 
-  assert.equal(dist.systemBaseAmount, 15);
-  assert.equal(dist.totalSystemAmount, 15);
+  assert.equal(dist.slotActivationAmount, 15);
+  // STRICT RULE: Treasury gets 0 from initial joining!
+  assert.equal(dist.treasuryAmount, 0);
   assert.equal(dist.totalAmount, 100);
 });
 
-test('Scenario 2: Only L1 exists, L2 and L3 missing -> Treasury gets 50 AIQX', () => {
-  const dist = calculateDistribution(WALLET_L1, null, null, TREASURY);
+test('Mechanism 1: Initial Joining when upline 2 & 3 missing - Treasury still gets 0 AIQX', () => {
+  const dist = calculateDistribution(WALLET_L1, null, null, TREASURY, WALLET_L1);
   assert.equal(dist.l1Amount, 50);
   assert.equal(dist.l1Wallet, WALLET_L1);
 
   assert.equal(dist.l2Amount, 30);
-  assert.equal(dist.l2Wallet, TREASURY);
-  assert.equal(dist.l2IsSystemReserve, true);
-
   assert.equal(dist.l3Amount, 5);
-  assert.equal(dist.l3Wallet, TREASURY);
-  assert.equal(dist.l3IsSystemReserve, true);
-
-  assert.equal(dist.totalSystemAmount, 50); // 15 base + 30 L2 reserve + 5 L3 reserve
+  assert.equal(dist.slotActivationAmount, 15);
+  assert.equal(dist.treasuryAmount, 0); // Treasury ALWAYS gets 0 from initial joining!
   assert.equal(dist.totalAmount, 100);
 });
 
@@ -141,4 +140,86 @@ test('Spillover breadth-first placement', () => {
   // Node 1 has 2 children (Node 2 and Node 3), next placement must spill over under Node 2
   const nextParent = calculateMatrixSpilloverPlacement(1, users);
   assert.equal(nextParent, 2);
+});
+
+test('Mechanism 2: Same-Level Slot Recycling (100 AIQX) - 50 to Eligible Upline, 10 to Treasury, 40 to Top 3 Downline Leaders', () => {
+  const users: UserRecord[] = [
+    { wallet: 'ROOT_WALLET', id: 1, activeLevels: [1, 2, 3, 4, 5], upline1: null, upline2: null, upline3: null, joinTime: '2025-01-01', joinSignature: '' },
+    { wallet: 'SPONSOR_UNQUALIFIED', id: 2, activeLevels: [1], upline1: 'ROOT_WALLET', upline2: null, upline3: null, joinTime: '2025-01-02', joinSignature: '' },
+    { wallet: 'USER_RECYCLING', id: 3, activeLevels: [1, 2], upline1: 'SPONSOR_UNQUALIFIED', upline2: 'ROOT_WALLET', upline3: null, joinTime: '2025-01-03', joinSignature: '' },
+    // User 3 has downline members
+    { wallet: 'DOWNLINE_A', id: 4, activeLevels: [1], upline1: 'USER_RECYCLING', upline2: 'SPONSOR_UNQUALIFIED', upline3: 'ROOT_WALLET', joinTime: '2025-01-04', joinSignature: '' },
+    { wallet: 'DOWNLINE_B', id: 5, activeLevels: [1], upline1: 'USER_RECYCLING', upline2: 'SPONSOR_UNQUALIFIED', upline3: 'ROOT_WALLET', joinTime: '2025-01-05', joinSignature: '' },
+    { wallet: 'DOWNLINE_C', id: 6, activeLevels: [1], upline1: 'USER_RECYCLING', upline2: 'SPONSOR_UNQUALIFIED', upline3: 'ROOT_WALLET', joinTime: '2025-01-06', joinSignature: '' },
+    // Downline A brought 2 members (Score = 2)
+    { wallet: 'SUB_A1', id: 7, activeLevels: [1], upline1: 'DOWNLINE_A', upline2: 'USER_RECYCLING', upline3: null, joinTime: '2025-01-07', joinSignature: '' },
+    { wallet: 'SUB_A2', id: 8, activeLevels: [1], upline1: 'DOWNLINE_A', upline2: 'USER_RECYCLING', upline3: null, joinTime: '2025-01-08', joinSignature: '' },
+    // Downline B brought 1 member (Score = 1)
+    { wallet: 'SUB_B1', id: 9, activeLevels: [1], upline1: 'DOWNLINE_B', upline2: 'USER_RECYCLING', upline3: null, joinTime: '2025-01-09', joinSignature: '' },
+  ];
+
+  // User 3 recycles Level 2 slot
+  // Direct sponsor (SPONSOR_UNQUALIFIED) only has Level 1, so Level 2 income CROSSOVERS to ROOT_WALLET
+  const recycleDist = calculateSlotRecyclingDistribution({
+    level: 2,
+    recyclingUserWallet: 'USER_RECYCLING',
+    allUsers: users,
+    treasuryWallet: TREASURY,
+    rootWallet: 'ROOT_WALLET',
+  });
+
+  // 1. Eligible Upline: 50 AIQX with crossover to ROOT_WALLET
+  assert.equal(recycleDist.eligibleUpline.amount, 50);
+  assert.equal(recycleDist.eligibleUpline.wallet, 'ROOT_WALLET');
+  assert.equal(recycleDist.eligibleUpline.isCrossover, true);
+
+  // 2. Treasury: 10 AIQX
+  assert.equal(recycleDist.treasury.amount, 10);
+  assert.equal(recycleDist.treasury.wallet, TREASURY);
+
+  // 3. Top 3 Downline Leaders: 40 AIQX (Rank 1 = 20, Rank 2 = 12, Rank 3 = 8)
+  assert.equal(recycleDist.downlineLeaders.length, 3);
+  // Downline A has score 2 -> Rank 1 (20 AIQX)
+  assert.equal(recycleDist.downlineLeaders[0].wallet, 'DOWNLINE_A');
+  assert.equal(recycleDist.downlineLeaders[0].rank, 1);
+  assert.equal(recycleDist.downlineLeaders[0].amount, 20);
+
+  // Downline B has score 1 -> Rank 2 (12 AIQX)
+  assert.equal(recycleDist.downlineLeaders[1].wallet, 'DOWNLINE_B');
+  assert.equal(recycleDist.downlineLeaders[1].rank, 2);
+  assert.equal(recycleDist.downlineLeaders[1].amount, 12);
+
+  // Downline C has score 0 -> Rank 3 (8 AIQX)
+  assert.equal(recycleDist.downlineLeaders[2].wallet, 'DOWNLINE_C');
+  assert.equal(recycleDist.downlineLeaders[2].rank, 3);
+  assert.equal(recycleDist.downlineLeaders[2].amount, 8);
+
+  // Total check: 50 + 10 + 20 + 12 + 8 = 100 AIQX
+  const leaderTotal = recycleDist.downlineLeaders.reduce((acc, l) => acc + l.amount, 0);
+  assert.equal(leaderTotal, 40);
+  assert.equal(recycleDist.eligibleUpline.amount + recycleDist.treasury.amount + leaderTotal, 100);
+});
+
+test('Crossover Logic: Upward traversal skips unqualified uplines until qualified upline is found', () => {
+  const users: UserRecord[] = [
+    { wallet: 'ROOT', id: 1, activeLevels: [1, 2, 3, 4], upline1: null, upline2: null, upline3: null, joinTime: '', joinSignature: '' },
+    { wallet: 'UPLINE_A', id: 2, activeLevels: [1, 2, 3], upline1: 'ROOT', upline2: null, upline3: null, joinTime: '', joinSignature: '' },
+    { wallet: 'UPLINE_B', id: 3, activeLevels: [1], upline1: 'UPLINE_A', upline2: 'ROOT', upline3: null, joinTime: '', joinSignature: '' },
+    { wallet: 'USER_C', id: 4, activeLevels: [1, 2], upline1: 'UPLINE_B', upline2: 'UPLINE_A', upline3: 'ROOT', joinTime: '', joinSignature: '' },
+  ];
+
+  // USER_C triggers Level 2 recycling.
+  // UPLINE_B only has Level 1 -> skips B
+  // UPLINE_A has Level 2 active -> matches UPLINE_A with crossover = true
+  const match = findEligibleUplineForLevel('USER_C', 2, users, 'ROOT');
+  assert.equal(match.wallet, 'UPLINE_A');
+  assert.equal(match.isCrossover, true);
+
+  // USER_C triggers Level 4 recycling.
+  // UPLINE_B (Level 1) -> skips
+  // UPLINE_A (Level 3 max) -> skips
+  // Reaches ROOT (Level 4 active)
+  const matchL4 = findEligibleUplineForLevel('USER_C', 4, users, 'ROOT');
+  assert.equal(matchL4.wallet, 'ROOT');
+  assert.equal(matchL4.isCrossover, true);
 });

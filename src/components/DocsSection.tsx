@@ -262,40 +262,82 @@ export const DocsSection: FC<DocsSectionProps> = ({
             {activeDocTab === 'distribution' && (
               <div className="space-y-4">
                 <div className="border-b border-[#1E2533] pb-4">
-                  <h2 className="text-xl font-bold text-white">4. Initial Joining Fee &amp; Commission Distribution</h2>
+                  <h2 className="text-xl font-bold text-white">4. Two Separate 100 AIQX Mechanisms</h2>
                   <p className="text-xs text-[#8B949E] mt-1">
-                    Transparent 100 AIQX initial onboarding allocation.
+                    Strict mathematical distinction between New Member Onboarding and Same-Level Slot Recycling.
                   </p>
                 </div>
 
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                  <div className="p-4 rounded-xl bg-[#0B0E14] border border-[#1A2230] space-y-2">
-                    <div className="text-xs font-bold text-white uppercase tracking-wider">Allocation Breakdown</div>
-                    <div className="space-y-2 text-xs">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  {/* Mechanism 1 */}
+                  <div className="p-4 rounded-xl bg-[#0B0E14] border border-emerald-500/30 space-y-3">
+                    <div className="flex items-center justify-between">
+                      <span className="text-xs font-bold text-white uppercase tracking-wider">1. Initial Joining (100 AIQX)</span>
+                      <span className="px-2 py-0.5 rounded text-[10px] font-mono bg-emerald-500/20 text-emerald-400 font-bold">New Member</span>
+                    </div>
+                    <div className="space-y-2 text-xs font-mono">
                       <div className="flex justify-between">
-                        <span className="text-[#8B949E]">Direct Referral (Level 1)</span>
+                        <span className="text-[#8B949E]">Direct Referral (Line 1)</span>
                         <span className="font-bold text-emerald-400">50 AIQX (50%)</span>
                       </div>
                       <div className="flex justify-between">
-                        <span className="text-[#8B949E]">Indirect Line (Level 2)</span>
+                        <span className="text-[#8B949E]">Indirect Line (Line 2)</span>
                         <span className="font-bold text-purple-400">30 AIQX (30%)</span>
                       </div>
                       <div className="flex justify-between">
-                        <span className="text-[#8B949E]">Third Line (Level 3)</span>
+                        <span className="text-[#8B949E]">Third Line (Line 3)</span>
                         <span className="font-bold text-amber-400">5 AIQX (5%)</span>
                       </div>
                       <div className="flex justify-between border-t border-[#1E2533] pt-2">
-                        <span className="text-[#8B949E]">Slot Activation Reserve</span>
-                        <span className="font-bold text-[#F5A623]">15 AIQX (15%)</span>
+                        <span className="text-[#8B949E]">Slot Activation (Vault)</span>
+                        <span className="font-bold text-cyan-400">15 AIQX (15%)</span>
+                      </div>
+                      <div className="flex justify-between border-t border-[#1E2533] pt-2">
+                        <span className="text-white font-bold">Protocol Treasury</span>
+                        <span className="font-bold text-emerald-400">0 AIQX (0%)</span>
                       </div>
                     </div>
+                    <p className="text-[11px] text-[#8B949E]">
+                      Fixed for all new entries. Treasury gets 0 AIQX from this initial onboarding fee.
+                    </p>
                   </div>
 
-                  <div className="p-4 rounded-xl bg-[#0B0E14] border border-[#1A2230] space-y-2 text-xs text-[#8B949E]">
-                    <div className="text-xs font-bold text-white uppercase tracking-wider">Slot Reserve Policy</div>
-                    <p>
-                      The initial 15 AIQX is designated strictly for slot activation and infrastructure maintenance.
-                      It is transferred directly to the immutable Treasury wallet and is never displayed as personal withdrawable referral income.
+                  {/* Mechanism 2 */}
+                  <div className="p-4 rounded-xl bg-[#0B0E14] border border-cyan-500/30 space-y-3">
+                    <div className="flex items-center justify-between">
+                      <span className="text-xs font-bold text-white uppercase tracking-wider">2. Slot Recycling (100 AIQX)</span>
+                      <span className="px-2 py-0.5 rounded text-[10px] font-mono bg-cyan-500/20 text-cyan-400 font-bold">Slot Full</span>
+                    </div>
+                    <div className="space-y-2 text-xs font-mono">
+                      <div className="flex justify-between">
+                        <span className="text-[#8B949E]">Eligible Upline (Active Level)</span>
+                        <span className="font-bold text-cyan-400">50 AIQX (50%)</span>
+                      </div>
+                      <div className="flex justify-between">
+                        <span className="text-[#8B949E]">Protocol Treasury</span>
+                        <span className="font-bold text-amber-400">10 AIQX (10%)</span>
+                      </div>
+                      <div className="flex justify-between border-t border-[#1E2533] pt-2">
+                        <span className="text-[#8B949E]">Top 3 Downline Leaders</span>
+                        <span className="font-bold text-emerald-400">40 AIQX (40%)</span>
+                      </div>
+                      <div className="pl-3 text-[11px] text-[#8B949E] space-y-1">
+                        <div className="flex justify-between">
+                          <span>• Rank 1 (50%)</span>
+                          <span className="text-white font-bold">20 AIQX</span>
+                        </div>
+                        <div className="flex justify-between">
+                          <span>• Rank 2 (30%)</span>
+                          <span className="text-white font-bold">12 AIQX</span>
+                        </div>
+                        <div className="flex justify-between">
+                          <span>• Rank 3 (20%)</span>
+                          <span className="text-white font-bold">8 AIQX</span>
+                        </div>
+                      </div>
+                    </div>
+                    <p className="text-[11px] text-[#8B949E]">
+                      Trigger: When a slot at any level is full, a NEW slot of SAME LEVEL opens with SAME FEE. Level does NOT auto-upgrade.
                     </p>
                   </div>
                 </div>
@@ -308,17 +350,17 @@ export const DocsSection: FC<DocsSectionProps> = ({
                 <div className="border-b border-[#1E2533] pb-4">
                   <h2 className="text-xl font-bold text-white">5. Protocol Treasury Wallet Policy</h2>
                   <p className="text-xs text-[#8B949E] mt-1">
-                    Strict isolation of governance and slot fees.
+                    Strict isolation of protocol operational reserve and zero admin control over user commissions.
                   </p>
                 </div>
 
                 <div className="space-y-3 text-xs text-[#C9D1D9] leading-relaxed">
                   <div className="p-4 rounded-xl bg-amber-500/10 border border-amber-500/25 space-y-2">
                     <span className="font-bold text-amber-400 uppercase text-[11px] tracking-wider block">
-                      STRICT ISOLATION RULE
+                      STRICT ISOLATION &amp; ZERO-BURN POLICY
                     </span>
                     <p className="text-amber-200">
-                      The Protocol Treasury receives <strong>ONLY</strong> slot activation fees (15%). No referral commissions, indirect line commissions, or crossover commissions may ever be routed to Treasury.
+                      The Protocol Treasury receives <strong>0 AIQX</strong> from new member joins. Treasury receives exactly <strong>10 AIQX</strong> solely upon same-level slot recycling. All referral commissions (Direct 50, Indirect 30, Third Line 5) and downline leader rewards (40 AIQX) are distributed directly to community wallets.
                     </p>
                   </div>
 
@@ -347,38 +389,32 @@ export const DocsSection: FC<DocsSectionProps> = ({
             {activeDocTab === 'crossover' && (
               <div className="space-y-4">
                 <div className="border-b border-[#1E2533] pb-4">
-                  <h2 className="text-xl font-bold text-white">6. Auto Crossover &amp; Commission Split</h2>
+                  <h2 className="text-xl font-bold text-white">6. Upward Crossover &amp; 40 AIQX Downline Ranking</h2>
                   <p className="text-xs text-[#8B949E] mt-1">
-                    Mechanics governing member slot acceleration past inactive uplines.
+                    Upward traversal mechanics and competitive 3-line leader compensation.
                   </p>
                 </div>
 
                 <div className="space-y-3 text-xs text-[#C9D1D9] leading-relaxed">
-                  <p>
-                    When a proactive downline activates a higher level before their direct upline has purchased that slot level,
-                    an automatic crossover event is triggered.
-                  </p>
-                  <p>
-                    The contract scans up the upline chain to identify the nearest eligible sponsor possessing the required slot level.
-                    Commissions are allocated as follows:
-                  </p>
-                  <div className="p-4 rounded-xl bg-[#0B0E14] border border-[#1A2230] space-y-2 font-mono text-xs">
-                    <div className="flex justify-between text-blue-400">
-                      <span>Eligible Upline 1</span>
-                      <span>40%</span>
-                    </div>
-                    <div className="flex justify-between text-purple-400">
-                      <span>Eligible Upline 2</span>
-                      <span>30%</span>
-                    </div>
-                    <div className="flex justify-between text-amber-400">
-                      <span>Eligible Upline 3</span>
-                      <span>20%</span>
-                    </div>
-                    <div className="flex justify-between text-[#8B949E]">
-                      <span>Unallocated Reserve Pool</span>
-                      <span>10%</span>
-                    </div>
+                  <div className="p-4 rounded-xl bg-[#0B0E14] border border-[#1A2230] space-y-2">
+                    <h4 className="text-xs font-bold text-white uppercase tracking-wider">Upward Crossover Mechanics</h4>
+                    <p className="text-[#8B949E]">
+                      If a downline member activates Level 2 (or higher) but their direct upline only has Level 1 active, all Level 2 income <strong className="text-white">CROSSOVERS</strong> to the nearest qualified upline in the tree who has that level unlocked. The amount traverses upward until it finds an active level holder. Upline must open that level to earn.
+                    </p>
+                  </div>
+
+                  <div className="p-4 rounded-xl bg-[#0B0E14] border border-[#1A2230] space-y-2">
+                    <h4 className="text-xs font-bold text-white uppercase tracking-wider">40 AIQX Downline Leader Engine</h4>
+                    <p className="text-[#8B949E]">
+                      Upon every slot recycling (100 AIQX), 40 AIQX is allocated to the Top 3 Leaders in the user's OWN downline:
+                    </p>
+                    <ul className="list-disc pl-5 space-y-1 text-[#8B949E]">
+                      <li><strong className="text-white">Scoring Metric</strong>: Total members in their 3 lines (Direct + Indirect + Third). Higher team count = higher rank.</li>
+                      <li><strong className="text-white">Rank 1 (50%)</strong>: 20 AIQX paid atomically on Solana.</li>
+                      <li><strong className="text-white">Rank 2 (30%)</strong>: 12 AIQX paid atomically on Solana.</li>
+                      <li><strong className="text-white">Rank 3 (20%)</strong>: 8 AIQX paid atomically on Solana.</li>
+                      <li><strong className="text-white">Zero Burn Fallback</strong>: If 3 downline lines are incomplete, rewards go to active members bringing users. No AIQX is ever burned.</li>
+                    </ul>
                   </div>
                 </div>
               </div>

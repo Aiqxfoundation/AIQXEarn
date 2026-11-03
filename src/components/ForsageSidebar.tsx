@@ -30,78 +30,57 @@ export const ForsageSidebar: FC<ForsageSidebarProps> = ({
   const navItems = [
     {
       id: 'dashboard' as NavigationTab,
-      label: 'Dashboard',
+      label: 'Matrix Dashboard',
       icon: LayoutGrid,
-    },
-    {
-      id: 'matrix-x' as NavigationTab,
-      label: 'Programs (Matrix X)',
-      icon: Layers,
+      badge: '14 Levels',
     },
     {
       id: 'terminal' as NavigationTab,
       label: 'DEX Terminal',
       icon: ArrowDownUp,
-    },
-    {
-      id: 'my-network' as NavigationTab,
-      label: 'Partners',
-      icon: Users,
-    },
-    {
-      id: 'transactions' as NavigationTab,
-      label: 'Stats & Ledger',
-      icon: BarChart2,
+      badge: 'Swap',
     },
     {
       id: 'docs' as NavigationTab,
-      label: 'Information',
+      label: 'Docs & Audits',
       icon: BookOpen,
-    },
-    {
-      id: 'contribute' as NavigationTab,
-      label: 'Contribute',
-      icon: Zap,
-    },
-    {
-      id: 'system-pool' as NavigationTab,
-      label: 'Protocol Pool',
-      icon: ShieldCheck,
+      badge: 'Rules',
     },
   ];
 
   return (
-    <aside className="w-60 shrink-0 hidden lg:flex flex-col justify-between py-6 pr-4 border-r border-[#1E2533] min-h-[calc(100vh-4rem)]">
+    <aside className="w-56 shrink-0 hidden lg:flex flex-col justify-between py-6 pr-4 border-r border-[#1E2533] min-h-[calc(100vh-4rem)]">
       {/* Top Menu Links */}
-      <div className="space-y-1">
+      <div className="space-y-1.5">
         <div className="px-3 pb-2 text-[10px] font-mono font-bold uppercase tracking-wider text-[#6E7681]">
-          Navigation
+          Core Programs
         </div>
 
         {navItems.map((item) => {
           const Icon = item.icon;
-          const isActive =
-            activeTab === item.id ||
-            (item.id === 'matrix-x' && (activeTab === 'my-slots' || activeTab === 'crossover')) ||
-            (item.id === 'my-network' && activeTab === 'referrals') ||
-            (item.id === 'docs' && activeTab === 'foundation');
+          const isActive = activeTab === item.id;
 
           return (
             <button
               key={item.id}
               onClick={() => setActiveTab(item.id)}
-              className={`w-full flex items-center space-x-3 px-3.5 py-3 rounded-2xl text-xs font-semibold transition-all cursor-pointer ${
+              className={`w-full flex items-center justify-between px-3.5 py-3 rounded-2xl text-xs font-semibold transition-all cursor-pointer ${
                 isActive
-                  ? 'bg-[#1E2638] text-white shadow-sm ring-1 ring-blue-500/30'
+                  ? 'bg-blue-600/15 text-white shadow-sm ring-1 ring-blue-500/30'
                   : 'text-[#8B949E] hover:text-white hover:bg-[#141A24]'
               }`}
             >
-              <Icon
-                className={`w-4 h-4 shrink-0 ${
-                  isActive ? 'text-blue-400' : 'text-[#6E7681]'
-                }`}
-              />
-              <span className="truncate">{item.label}</span>
+              <div className="flex items-center space-x-3">
+                <Icon
+                  className={`w-4 h-4 shrink-0 ${
+                    isActive ? 'text-blue-400' : 'text-[#6E7681]'
+                  }`}
+                />
+                <span className="truncate">{item.label}</span>
+              </div>
+              <span className="text-[9px] font-mono px-1.5 py-0.5 rounded bg-[#171D27] text-[#8B949E]">
+                {item.badge}
+              </span>
             </button>
           );
         })}

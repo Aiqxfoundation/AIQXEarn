@@ -1,4 +1,4 @@
-import React, { FC, useState } from 'react';
+import React, { FC, useState, useEffect } from 'react';
 import {
   Copy,
   Check,
@@ -14,9 +14,25 @@ import {
   ShieldCheck,
   User,
   Award,
+  Crown,
+  ChevronRight,
+  Sparkles,
+  Lock,
+  CheckCircle2,
+  AlertCircle,
+  Loader2,
+  GitBranch,
 } from 'lucide-react';
 import { AppConfig, formatAddress, getExplorerUrl } from '../lib/solana';
-import { UserRecord, EarningsRecord } from '../lib/referral-engine';
+import {
+  UserRecord,
+  EarningsRecord,
+  MATRIX_LEVELS_CONFIG,
+  MatrixLevelConfig,
+  OFFICIAL_TREASURY_WALLET,
+} from '../lib/referral-engine';
+import { ForsageSlotCard, SlotCardData } from './matrix/ForsageSlotCard';
+import { ForsageSlotModal } from './matrix/ForsageSlotModal';
 
 interface ForsageDashboardProps {
   config: AppConfig;
@@ -28,6 +44,8 @@ interface ForsageDashboardProps {
     crossoverEarnings?: number;
     contributionEarnings?: number;
     totalEarnings: number;
+    uplineRecycleEarnings?: number;
+    downlineRewardEarnings?: number;
     history: EarningsRecord[];
   };
   referrals: {
@@ -52,6 +70,7 @@ interface ForsageDashboardProps {
   onNavigateToContribute?: () => void;
   onNavigateToJoin?: () => void;
   onInspectSlotLevel?: (level: number) => void;
+  onRefreshData?: () => void;
 }
 
 export const ForsageDashboard: FC<ForsageDashboardProps> = ({
@@ -64,21 +83,38 @@ export const ForsageDashboard: FC<ForsageDashboardProps> = ({
   isPreviewMode = false,
   onExitPreview,
   onPreviewMemberId,
-  onNavigateToMatrix,
-  onNavigateToPartners,
   onNavigateToDocs,
-  onNavigateToContribute,
   onNavigateToJoin,
-  onInspectSlotLevel,
+  onRefreshData,
 }) => {
   const [copiedLink, setCopiedLink] = useState(false);
   const [copiedWallet, setCopiedWallet] = useState(false);
+  const [copiedPartnerWallet, setCopiedPartnerWallet] = useState<string | null>(null);
+
+  // Network tracking state: Line 1 (Directs), Line 2 (Indirects), Line 3 (Third Line)
+  const [activeNetworkLine, setActiveNetworkLine] = useState<'l1' | 'l2' | 'l3'>('l1');
+
+  // Downline leaders for the 40 AIQX recycling reward
+  const [downlineLeaders, setDownlineLeaders] = useState<any[]>([]);
+  const [isLoadingLeaders, setIsLoadingLeaders] = useState(false);
+
+  // 14-Level Modal State
+  const [inspectingLevel, setInspectingLevel] = useState<MatrixLevelConfig | null>(null);
+  const [activatingLevel, setActivatingLevel] = useState<MatrixLevelConfig | null>(null);
+  const [isActivating, setIsActivating] = useState(false);
+  const [activationError, setActivationError] = useState<string | null>(null);
+  const [activationSuccess, setActivationSuccess] = useState<string | null>(null);
+
+  // Level 1 slot quick recycle
+  const [isRecyclingL1, setIsRecyclingL1] = useState(false);
+  const [recycleSuccess, setRecycleSuccess] = useState<string | null>(null);
 
   const memberId = user.id || 1;
   const refParam = String(memberId);
-  const personalLink = typeof window !== 'undefined'
-    ? `${window.location.origin}/?ref=${refParam}`
-    : `https://aiqx.network/?ref=${refParam}`;
+  const personalLink =
+    typeof window !== 'undefined'
+      ? `${window.location.origin}/?ref=${refParam}`
+      : `https://aiqx.network/?ref=${refParam}`;
 
   const copyToClipboard = async (text: string, type: 'link' | 'wallet') => {
     try {
@@ -90,6 +126,16 @@ export const ForsageDashboard: FC<ForsageDashboardProps> = ({
         setCopiedWallet(true);
         setTimeout(() => setCopiedWallet(false), 2000);
       }
+    } catch (e) {
+      console.warn('Copy failed', e);
+    }
+  };
+
+  const copyPartnerWallet = async (wallet: string) => {
+    try {
+      await navigator.clipboard.writeText(wallet);
+      setCopiedPartnerWallet(wallet);
+      setTimeout(() => setCopiedPartnerWallet(null), 2000);
     } catch (e) {
       console.warn('Copy failed', e);
     }
@@ -107,24 +153,118 @@ export const ForsageDashboard: FC<ForsageDashboardProps> = ({
   const sponsorId = user.sponsorId || (memberId > 1 ? 1 : null);
   const activeLevels = user.activeLevels || [1];
 
+  // Fetch live top 3 downline leaders for 40 AIQX pool qualification
+  useEffect(() => {
+    let isMounted = true;
+    async function loadLeaders() {
+      try {
+        setIsLoadingLeaders(true);
+        const target = user.wallet || memberId;
+        const res = await fetch(`/api/matrix/downline-leaders/${target}`);
+        const data = await res.json();
+        if (isMounted && data.success && data.leaders) {
+          setDownlineLeaders(data.leaders);
+        }
+      } catch (err) {
+        console.warn('Could not load downline leaders:', err);
+      } finally {
+        if (isMounted) setIsLoadingLeaders(false);
+      }
+    }
+    loadLeaders();
+    return () => {
+      isMounted = false;
+    };
+  }, [user.wallet, memberId]);
+
+  // Handle independent level activation
+  const handleActivateLevel = async (lvl: MatrixLevelConfig) => {
+    try {
+      setIsActivating(true);
+      setActivationError(null);
+      setActivationSuccess(null);
+
+      const target = user.wallet || String(memberId);
+      const res = await fetch('/api/matrix/upgrade-level', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          wallet: target,
+          level: lvl.level,
+        }),
+      });
+
+      const data = await res.json();
+      if (data.success) {
+        setActivationSuccess(`Level ${lvl.level} activated successfully!`);
+        onRefreshData?.();
+      } else {
+        setActivationError(data.error || `Failed to activate Level ${lvl.level}`);
+      }
+    } catch (err: any) {
+      setActivationError(err.message || 'Network error activating level.');
+    } finally {
+      setIsActivating(false);
+    }
+  };
+
+  // Handle Level 1 direct slot recycle (Same-Level Recycling: 50 upline, 10 treasury, 40 top 3 downline leaders)
+  const handleRecycleLevel1 = async () => {
+    try {
+      setIsRecyclingL1(true);
+      setRecycleSuccess(null);
+      const target = user.wallet || String(memberId);
+      const res = await fetch('/api/matrix/recycle-slot', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          wallet: target,
+          level: 1,
+        }),
+      });
+      const data = await res.json();
+      if (data.success) {
+        setRecycleSuccess(
+          `Slot 1 Recycled! 50 AIQX to Upline ID #${data.eligibleUpline?.id || 1}, 10 AIQX to Treasury, 40 AIQX to Top 3 Leaders.`
+        );
+        onRefreshData?.();
+        setTimeout(() => setRecycleSuccess(null), 5000);
+      } else {
+        alert(data.error || 'Failed to recycle slot');
+      }
+    } catch (e: any) {
+      alert(e.message || 'Error executing slot recycling');
+    } finally {
+      setIsRecyclingL1(false);
+    }
+  };
+
   // Ratio calculation: total earnings / slot activation cost ratio
   const activeLevelsCost = activeLevels.reduce((acc, lvl) => {
-    // 100 for L1, doubling each level
     return acc + 100 * Math.pow(2, lvl - 1);
   }, 0);
-  const ratioPercent = activeLevelsCost > 0
-    ? Math.max(100, Math.round((earnings.totalEarnings / activeLevelsCost) * 100))
-    : 100;
+  const ratioPercent =
+    activeLevelsCost > 0
+      ? Math.max(100, Math.round((earnings.totalEarnings / activeLevelsCost) * 100))
+      : 100;
+
+  // Active network list
+  const currentNetworkList =
+    activeNetworkLine === 'l1'
+      ? referrals.tree.l1
+      : activeNetworkLine === 'l2'
+      ? referrals.tree.l2
+      : referrals.tree.l3;
 
   return (
-    <div className="space-y-6 max-w-6xl mx-auto py-2">
+    <div className="space-y-6 max-w-7xl mx-auto py-2">
       {/* Read-Only Preview Mode Notice Banner */}
       {isPreviewMode && (
         <div className="flex items-center justify-between px-5 py-3 rounded-2xl bg-blue-600/15 border border-blue-500/30 text-xs">
           <div className="flex items-center space-x-2 text-blue-300">
             <span className="w-2 h-2 rounded-full bg-blue-400 animate-ping" />
             <span className="font-semibold">
-              Preview Mode: Inspecting public on-chain profile for Member ID #{memberId}
+              Preview Mode: Inspecting public on-chain profile &amp; matrix for Member ID #{memberId}
             </span>
           </div>
           {onExitPreview && (
@@ -138,11 +278,10 @@ export const ForsageDashboard: FC<ForsageDashboardProps> = ({
         </div>
       )}
 
-      {/* TOP ROW: User Card (Left) & Personal Link Card (Right) - Exactly matching Forsage */}
+      {/* TOP ROW: User Profile Card (Left) & Personal Link Card (Right) */}
       <div className="grid grid-cols-1 md:grid-cols-12 gap-5">
-        {/* Left User Card (7 cols) */}
+        {/* Left User Card (5 cols) */}
         <div className="md:col-span-6 lg:col-span-5 p-6 rounded-3xl bg-[#11161E] border border-[#1E2533] flex items-center space-x-5 shadow-lg relative overflow-hidden">
-          {/* Subtle background glow */}
           <div className="absolute -top-12 -left-12 w-36 h-36 bg-blue-500/10 rounded-full blur-2xl pointer-events-none" />
 
           {/* Large Avatar with Medal Badge */}
@@ -150,7 +289,6 @@ export const ForsageDashboard: FC<ForsageDashboardProps> = ({
             <div className="w-20 h-20 rounded-full bg-gradient-to-tr from-[#1E293B] to-[#334155] border-2 border-blue-500/40 flex items-center justify-center text-blue-400 shadow-inner">
               <User className="w-10 h-10" />
             </div>
-            {/* Small golden badge icon */}
             <div className="absolute -bottom-1 -right-1 w-6 h-6 rounded-full bg-gradient-to-r from-amber-400 to-amber-600 border-2 border-[#11161E] flex items-center justify-center text-black font-black text-[9px] shadow-md">
               <Award className="w-3.5 h-3.5" />
             </div>
@@ -158,9 +296,7 @@ export const ForsageDashboard: FC<ForsageDashboardProps> = ({
 
           {/* Member Details */}
           <div className="space-y-1.5 min-w-0">
-            <h1 className="text-3xl font-black text-white tracking-tight">
-              ID {memberId}
-            </h1>
+            <h1 className="text-3xl font-black text-white tracking-tight">ID {memberId}</h1>
 
             {/* Wallet Address with Copy and Explorer */}
             <div className="flex items-center space-x-2 text-xs font-mono text-[#8B949E]">
@@ -187,7 +323,7 @@ export const ForsageDashboard: FC<ForsageDashboardProps> = ({
               </a>
             </div>
 
-            {/* Invited By Upline */}
+            {/* Invited By Sponsor */}
             <div className="text-xs text-[#6E7681] pt-0.5">
               <span>invited {joinDateFormatted} by </span>
               {sponsorId ? (
@@ -204,21 +340,22 @@ export const ForsageDashboard: FC<ForsageDashboardProps> = ({
           </div>
         </div>
 
-        {/* Right Personal Link Card (5 cols) */}
+        {/* Right Personal Link Card (7 cols) */}
         <div className="md:col-span-6 lg:col-span-7 p-6 rounded-3xl bg-[#11161E] border border-[#1E2533] flex flex-col justify-between shadow-lg relative overflow-hidden">
-          {/* Subtle background glow */}
           <div className="absolute -top-12 -right-12 w-36 h-36 bg-blue-500/10 rounded-full blur-2xl pointer-events-none" />
 
           <div className="space-y-2">
             <div className="flex items-center space-x-1.5 text-xs text-[#8B949E]">
               <span className="font-semibold">Personal link</span>
-              <Info className="w-3.5 h-3.5 text-[#6E7681]" />
+              <span className="text-[10px] text-blue-400 font-mono bg-blue-600/10 px-2 py-0.5 rounded-full border border-blue-500/20">
+                Direct Line
+              </span>
             </div>
 
             {/* Link & Copy */}
             <div className="flex items-center justify-between p-3 rounded-2xl bg-[#0B0E14] border border-[#1E2533]">
               <span className="text-sm sm:text-base font-bold text-blue-400 font-mono truncate mr-2">
-                {personalLink.replace(/^https?:\/\//, '')}
+                aiqx.sol/b/{memberId}
               </span>
               <button
                 onClick={() => copyToClipboard(personalLink, 'link')}
@@ -235,7 +372,7 @@ export const ForsageDashboard: FC<ForsageDashboardProps> = ({
           </div>
 
           <div className="flex items-center justify-between pt-4 text-xs text-[#8B949E]">
-            <span>Not a member yet? Sign up with this upline</span>
+            <span>Join with this sponsor ID #{memberId}</span>
             <button
               onClick={onNavigateToJoin}
               className="px-4 py-2 rounded-xl bg-blue-600 hover:bg-blue-500 text-white font-bold text-xs shadow-md shadow-blue-500/25 transition-all cursor-pointer"
@@ -246,16 +383,20 @@ export const ForsageDashboard: FC<ForsageDashboardProps> = ({
         </div>
       </div>
 
-      {/* SECOND ROW: 4 Stat Metric Cards (Forsage: Partners, Team, Ratio, Profits with sparkline) */}
+      {/* SECOND ROW: 4 Stat Metric Cards (Partners, Team, Ratio, Profits with Staircase Sparkline) */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
         {/* Card 1: Partners */}
         <div
-          onClick={onNavigateToPartners}
-          className="p-5 rounded-3xl bg-[#11161E] border border-[#1E2533] space-y-3 cursor-pointer hover:border-[#2C364A] transition-all group shadow-sm"
+          onClick={() => setActiveNetworkLine('l1')}
+          className={`p-5 rounded-3xl bg-[#11161E] border transition-all cursor-pointer shadow-sm group ${
+            activeNetworkLine === 'l1'
+              ? 'border-blue-500 ring-1 ring-blue-500/30'
+              : 'border-[#1E2533] hover:border-[#2C364A]'
+          }`}
         >
           <div className="flex items-center space-x-1.5 text-xs text-[#8B949E]">
             <span className="font-medium">Partners</span>
-            <Info className="w-3.5 h-3.5 text-[#6E7681]" />
+            <span className="text-[10px] text-blue-400 font-mono">Line 1</span>
           </div>
           <div>
             <div className="text-2xl sm:text-3xl font-black text-white group-hover:text-blue-400 transition-colors">
@@ -270,12 +411,16 @@ export const ForsageDashboard: FC<ForsageDashboardProps> = ({
 
         {/* Card 2: Team */}
         <div
-          onClick={onNavigateToPartners}
-          className="p-5 rounded-3xl bg-[#11161E] border border-[#1E2533] space-y-3 cursor-pointer hover:border-[#2C364A] transition-all group shadow-sm"
+          onClick={() => setActiveNetworkLine('l2')}
+          className={`p-5 rounded-3xl bg-[#11161E] border transition-all cursor-pointer shadow-sm group ${
+            activeNetworkLine === 'l2' || activeNetworkLine === 'l3'
+              ? 'border-blue-500 ring-1 ring-blue-500/30'
+              : 'border-[#1E2533] hover:border-[#2C364A]'
+          }`}
         >
           <div className="flex items-center space-x-1.5 text-xs text-[#8B949E]">
             <span className="font-medium">Team</span>
-            <Info className="w-3.5 h-3.5 text-[#6E7681]" />
+            <span className="text-[10px] text-purple-400 font-mono">3 Lines</span>
           </div>
           <div>
             <div className="text-2xl sm:text-3xl font-black text-white group-hover:text-blue-400 transition-colors">
@@ -292,15 +437,13 @@ export const ForsageDashboard: FC<ForsageDashboardProps> = ({
         <div className="p-5 rounded-3xl bg-[#11161E] border border-[#1E2533] space-y-3 shadow-sm">
           <div className="flex items-center space-x-1.5 text-xs text-[#8B949E]">
             <span className="font-medium">Ratio</span>
-            <Info className="w-3.5 h-3.5 text-[#6E7681]" />
+            <span className="text-[10px] text-[#6E7681] font-mono">ROI %</span>
           </div>
           <div>
-            <div className="text-2xl sm:text-3xl font-black text-white">
-              {ratioPercent} %
-            </div>
+            <div className="text-2xl sm:text-3xl font-black text-white">{ratioPercent} %</div>
             <div className="text-xs text-emerald-400 font-medium flex items-center space-x-1 mt-1">
               <span>↑</span>
-              <span>0%</span>
+              <span>Active</span>
             </div>
           </div>
         </div>
@@ -310,10 +453,11 @@ export const ForsageDashboard: FC<ForsageDashboardProps> = ({
           <div className="space-y-1 relative z-10">
             <div className="flex items-center space-x-1.5 text-xs text-[#8B949E]">
               <span className="font-medium">Profits</span>
-              <Info className="w-3.5 h-3.5 text-[#6E7681]" />
+              <span className="text-[10px] text-blue-400 font-mono">Total Net</span>
             </div>
             <div className="text-2xl sm:text-3xl font-black text-white truncate">
-              {earnings.totalEarnings.toLocaleString()} <span className="text-base text-blue-400 font-bold">AIQX</span>
+              {earnings.totalEarnings.toLocaleString()}{' '}
+              <span className="text-base text-blue-400 font-bold">AIQX</span>
             </div>
             <div className="text-xs text-emerald-400 font-medium flex items-center space-x-1">
               <span>↑</span>
@@ -346,232 +490,327 @@ export const ForsageDashboard: FC<ForsageDashboardProps> = ({
         </div>
       </div>
 
-      {/* THIRD ROW: AIQX Programs Title + 4 Program Cards (matching Forsage x3, x4, xXx, xGold cards) */}
-      <div className="space-y-4 pt-2">
-        <div className="flex items-center space-x-2">
-          <h2 className="text-xl font-black text-white tracking-tight">AIQX Programs</h2>
-          <button
-            onClick={onNavigateToDocs}
-            className="flex items-center space-x-1 px-2.5 py-0.5 rounded-full bg-blue-600/20 text-blue-400 border border-blue-500/30 text-[11px] font-semibold hover:bg-blue-600/30 transition-colors cursor-pointer"
-          >
-            <Info className="w-3 h-3" />
-            <span>Info</span>
-          </button>
+      {/* THIRD ROW: USERS NETWORK TRACK SYSTEM (Directly on Dashboard) */}
+      <div className="p-6 rounded-3xl bg-[#11161E] border border-[#1E2533] space-y-5 shadow-lg">
+        {/* Network Header & 3-Line Switcher */}
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-4 border-b border-[#1E2533]">
+          <div className="space-y-1">
+            <div className="flex items-center space-x-2">
+              <GitBranch className="w-4 h-4 text-blue-400" />
+              <h2 className="text-lg font-black text-white tracking-tight">
+                Network Track System
+              </h2>
+            </div>
+            <p className="text-xs text-[#8B949E]">
+              Track your 3-line downline hierarchy, active slot levels &amp; leader rankings.
+            </p>
+          </div>
+
+          {/* Line Switcher Pills */}
+          <div className="flex items-center space-x-1.5 p-1 rounded-2xl bg-[#0B0E14] border border-[#1E2533]">
+            <button
+              onClick={() => setActiveNetworkLine('l1')}
+              className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer ${
+                activeNetworkLine === 'l1'
+                  ? 'bg-blue-600 text-white shadow-sm'
+                  : 'text-[#8B949E] hover:text-white'
+              }`}
+            >
+              Directs (50%) • {referrals.l1Count}
+            </button>
+            <button
+              onClick={() => setActiveNetworkLine('l2')}
+              className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer ${
+                activeNetworkLine === 'l2'
+                  ? 'bg-blue-600 text-white shadow-sm'
+                  : 'text-[#8B949E] hover:text-white'
+              }`}
+            >
+              Indirects (30%) • {referrals.l2Count}
+            </button>
+            <button
+              onClick={() => setActiveNetworkLine('l3')}
+              className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer ${
+                activeNetworkLine === 'l3'
+                  ? 'bg-blue-600 text-white shadow-sm'
+                  : 'text-[#8B949E] hover:text-white'
+              }`}
+            >
+              Third Line (5%) • {referrals.l3Count}
+            </button>
+          </div>
         </div>
 
-        {/* 2x2 Programs Grid */}
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
-          {/* Program 1: Matrix X (14-Level Doubling Matrix) */}
-          <div className="relative rounded-3xl p-6 bg-gradient-to-br from-[#121824] via-[#10141E] to-[#0A0D13] border border-blue-500/20 hover:border-blue-500/40 transition-all shadow-xl group overflow-hidden">
-            {/* Ambient Corner Glow */}
-            <div className="absolute top-0 right-0 w-48 h-48 bg-blue-500/10 rounded-full blur-3xl pointer-events-none" />
-
-            <div className="flex items-start justify-between">
-              <div>
-                <span className="text-2xl font-black text-white tracking-wide">Matrix X</span>
-                <p className="text-xs text-[#8B949E] mt-0.5">14-Level Doubling Slot Matrix</p>
-              </div>
-              <div className="text-right">
-                <span className="text-xl sm:text-2xl font-black text-white font-mono">
-                  {earnings.totalEarnings.toLocaleString()} <span className="text-sm text-blue-400 font-bold">AIQX</span>
-                </span>
-                <ArrowUpRight className="w-4 h-4 text-[#6E7681] group-hover:text-blue-400 transition-colors ml-auto mt-1" />
-              </div>
+        {/* Network Content: Partner Cards + Top 3 Leaders Card */}
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-5">
+          {/* Left: Active Line Partners List (8 cols) */}
+          <div className="lg:col-span-8 space-y-3">
+            <div className="flex items-center justify-between text-xs text-[#8B949E] px-1 font-mono">
+              <span>
+                {activeNetworkLine === 'l1'
+                  ? 'LINE 1 — DIRECT MEMBERS (50% REWARD)'
+                  : activeNetworkLine === 'l2'
+                  ? 'LINE 2 — INDIRECT MEMBERS (30% REWARD)'
+                  : 'LINE 3 — THIRD-LINE MEMBERS (5% REWARD)'}
+              </span>
+              <span>{currentNetworkList.length} Members</span>
             </div>
 
-            {/* 14 Slot Preview Tiles (2 rows of 7 slots) */}
-            <div className="my-6">
-              <div className="grid grid-cols-7 gap-2">
-                {Array.from({ length: 14 }).map((_, idx) => {
-                  const lvlNum = idx + 1;
-                  const isUnlocked = activeLevels.includes(lvlNum);
+            {currentNetworkList.length === 0 ? (
+              <div className="p-8 rounded-2xl bg-[#0B0E14] border border-[#1E2533] text-center space-y-2">
+                <Users className="w-8 h-8 text-[#4A5568] mx-auto" />
+                <p className="text-xs text-[#8B949E]">
+                  No members in {activeNetworkLine === 'l1' ? 'Direct Line 1' : activeNetworkLine === 'l2' ? 'Line 2' : 'Line 3'} yet.
+                </p>
+                <div className="pt-2">
+                  <button
+                    onClick={() => copyToClipboard(personalLink, 'link')}
+                    className="px-3.5 py-1.5 rounded-xl bg-[#171D27] hover:bg-[#202735] text-xs font-mono text-blue-400 hover:text-white transition-colors cursor-pointer border border-[#1E2533]"
+                  >
+                    {copiedLink ? 'Copied Link!' : 'Copy Referral Link'}
+                  </button>
+                </div>
+              </div>
+            ) : (
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 max-h-72 overflow-y-auto pr-1">
+                {currentNetworkList.map((partner) => {
+                  const partnerId = partner.id || 1;
                   return (
                     <div
-                      key={lvlNum}
-                      onClick={() => onInspectSlotLevel?.(lvlNum)}
-                      title={`Level ${lvlNum}: ${isUnlocked ? 'Active' : 'Locked'}`}
-                      className={`h-9 rounded-xl flex items-center justify-center font-mono text-[10px] font-bold cursor-pointer transition-all duration-200 ${
-                        isUnlocked
-                          ? 'bg-blue-600 text-white shadow-[0_0_12px_rgba(59,130,246,0.5)] scale-100 hover:scale-105'
-                          : 'bg-[#171D27] text-[#4A5568] border border-[#232B3B]/60 hover:border-[#38455C]'
-                      }`}
+                      key={partner.wallet}
+                      className="p-3.5 rounded-2xl bg-[#0B0E14] border border-[#1E2533] hover:border-blue-500/40 transition-all flex items-center justify-between group"
                     >
-                      {lvlNum}
+                      <div className="space-y-1 min-w-0">
+                        <div className="flex items-center space-x-2">
+                          <button
+                            onClick={() => onPreviewMemberId?.(partnerId)}
+                            className="text-xs font-black text-white group-hover:text-blue-400 transition-colors font-mono cursor-pointer hover:underline"
+                            title="Inspect Partner Matrix"
+                          >
+                            ID #{partnerId}
+                          </button>
+                          <span className="px-1.5 py-0.5 rounded text-[9px] font-mono bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">
+                            L{(partner.activeLevels || [1]).join(', ')}
+                          </span>
+                        </div>
+                        <div className="flex items-center space-x-1.5 text-[11px] font-mono text-[#6E7681]">
+                          <span>{formatAddress(partner.wallet)}</span>
+                          <button
+                            onClick={() => copyPartnerWallet(partner.wallet)}
+                            className="hover:text-white cursor-pointer"
+                            title="Copy Wallet"
+                          >
+                            {copiedPartnerWallet === partner.wallet ? (
+                              <Check className="w-3 h-3 text-emerald-400" />
+                            ) : (
+                              <Copy className="w-3 h-3" />
+                            )}
+                          </button>
+                        </div>
+                      </div>
+
+                      <button
+                        onClick={() => onPreviewMemberId?.(partnerId)}
+                        className="p-2 rounded-xl bg-[#171D27] hover:bg-blue-600 text-[#8B949E] hover:text-white transition-colors cursor-pointer shrink-0"
+                        title="View Matrix"
+                      >
+                        <ChevronRight className="w-4 h-4" />
+                      </button>
                     </div>
                   );
                 })}
               </div>
-            </div>
-
-            {/* Bottom Action */}
-            <div className="flex items-center justify-end pt-2">
-              <button
-                onClick={onNavigateToMatrix}
-                className="px-5 py-2.5 rounded-2xl bg-blue-600 hover:bg-blue-500 text-white font-bold text-xs shadow-lg shadow-blue-500/25 flex items-center space-x-1.5 transition-all cursor-pointer"
-              >
-                <span>Preview</span>
-                <span>→</span>
-              </button>
-            </div>
+            )}
           </div>
 
-          {/* Program 2: Direct Referral Program (50%) */}
-          <div className="relative rounded-3xl p-6 bg-gradient-to-br from-[#181324] via-[#120E1C] to-[#0A0D13] border border-purple-500/20 hover:border-purple-500/40 transition-all shadow-xl group overflow-hidden">
-            {/* Ambient Corner Glow */}
-            <div className="absolute top-0 right-0 w-48 h-48 bg-purple-500/10 rounded-full blur-3xl pointer-events-none" />
-
-            <div className="flex items-start justify-between">
-              <div>
-                <span className="text-2xl font-black text-white tracking-wide">Direct Line</span>
-                <p className="text-xs text-[#8B949E] mt-0.5">50% Instant On-Chain Commission</p>
-              </div>
-              <div className="text-right">
-                <span className="text-xl sm:text-2xl font-black text-white font-mono">
-                  {earnings.l1Earnings.toLocaleString()} <span className="text-sm text-purple-400 font-bold">AIQX</span>
+          {/* Right: Top 3 Downline Leaders Card (4 cols) */}
+          <div className="lg:col-span-4 p-4 rounded-2xl bg-[#0B0E14] border border-[#1E2533] space-y-3 flex flex-col justify-between">
+            <div className="space-y-1">
+              <div className="flex items-center space-x-2">
+                <Crown className="w-4 h-4 text-amber-400" />
+                <span className="text-xs font-black text-white tracking-wide">
+                  Top 3 Downline Leaders
                 </span>
-                <ArrowUpRight className="w-4 h-4 text-[#6E7681] group-hover:text-purple-400 transition-colors ml-auto mt-1" />
               </div>
+              <p className="text-[11px] text-[#8B949E]">
+                Auto-qualified for 40 AIQX Slot Recycling Reward (20 / 12 / 8 AIQX).
+              </p>
             </div>
 
-            {/* Visual Tiles */}
-            <div className="my-6">
-              <div className="grid grid-cols-7 gap-2">
-                {Array.from({ length: 14 }).map((_, idx) => {
-                  const lvlNum = idx + 1;
-                  const isUnlocked = activeLevels.includes(lvlNum);
+            {/* Leaders Ranking List */}
+            <div className="space-y-2">
+              {isLoadingLeaders ? (
+                <div className="py-6 flex items-center justify-center space-x-2 text-xs text-[#8B949E]">
+                  <Loader2 className="w-4 h-4 animate-spin text-blue-400" />
+                  <span>Scoring downline...</span>
+                </div>
+              ) : downlineLeaders.length === 0 ? (
+                <div className="py-4 text-center text-xs text-[#6E7681]">
+                  Downline leaders will appear here as your 3 lines grow.
+                </div>
+              ) : (
+                downlineLeaders.slice(0, 3).map((leader) => {
+                  const leaderId = leader.userId || leader.user?.id || 1;
+                  const teamCount = leader.teamCount ?? leader.score ?? 0;
+                  const rewardAmt = leader.amount ?? leader.rewardAiqx ?? (leader.rank === 1 ? 20 : leader.rank === 2 ? 12 : 8);
+
                   return (
                     <div
-                      key={lvlNum}
-                      className={`h-9 rounded-xl flex items-center justify-center font-mono text-[10px] font-bold ${
-                        isUnlocked
-                          ? 'bg-purple-600 text-white shadow-[0_0_12px_rgba(168,85,247,0.5)]'
-                          : 'bg-[#1C1628] text-[#4A5568] border border-[#2B213D]/60'
-                      }`}
+                      key={leader.rank}
+                      onClick={() => onPreviewMemberId?.(leaderId)}
+                      className="p-2.5 rounded-xl bg-[#11161E] border border-[#1E2533] flex items-center justify-between cursor-pointer hover:border-amber-400/40 transition-colors"
                     >
-                      {lvlNum}
+                      <div className="flex items-center space-x-2.5">
+                        <div
+                          className={`w-6 h-6 rounded-lg flex items-center justify-center font-bold text-xs ${
+                            leader.rank === 1
+                              ? 'bg-amber-400/20 text-amber-400 border border-amber-400/30'
+                              : leader.rank === 2
+                              ? 'bg-slate-400/20 text-slate-300 border border-slate-400/30'
+                              : 'bg-amber-700/20 text-amber-600 border border-amber-700/30'
+                          }`}
+                        >
+                          #{leader.rank}
+                        </div>
+                        <div>
+                          <div className="text-xs font-bold text-white font-mono">
+                            ID #{leaderId}
+                          </div>
+                          <div className="text-[10px] text-[#6E7681]">
+                            Team: {teamCount} members
+                          </div>
+                        </div>
+                      </div>
+
+                      <div className="text-right">
+                        <div className="text-xs font-black text-emerald-400 font-mono">
+                          +{rewardAmt} AIQX
+                        </div>
+                        <div className="text-[9px] text-[#8B949E]">
+                          {leader.rank === 1 ? '50% Share' : leader.rank === 2 ? '30% Share' : '20% Share'}
+                        </div>
+                      </div>
                     </div>
                   );
-                })}
-              </div>
+                })
+              )}
             </div>
 
-            {/* Bottom Action */}
-            <div className="flex items-center justify-end pt-2">
-              <button
-                onClick={onNavigateToPartners}
-                className="px-5 py-2.5 rounded-2xl bg-purple-600 hover:bg-purple-500 text-white font-bold text-xs shadow-lg shadow-purple-500/25 flex items-center space-x-1.5 transition-all cursor-pointer"
-              >
-                <span>Partners</span>
-                <span>→</span>
-              </button>
-            </div>
-          </div>
-
-          {/* Program 3: Indirect & 3rd Line Cascade (30% + 5%) */}
-          <div className="relative rounded-3xl p-6 bg-gradient-to-br from-[#24131E] via-[#1C0E18] to-[#0A0D13] border border-pink-500/20 hover:border-pink-500/40 transition-all shadow-xl group overflow-hidden">
-            {/* Ambient Corner Glow */}
-            <div className="absolute top-0 right-0 w-48 h-48 bg-pink-500/10 rounded-full blur-3xl pointer-events-none" />
-
-            <div className="flex items-start justify-between">
-              <div>
-                <span className="text-2xl font-black text-white tracking-wide">Team Cascade</span>
-                <p className="text-xs text-[#8B949E] mt-0.5">30% Level 2 + 5% Level 3 Rewards</p>
-              </div>
-              <div className="text-right">
-                <span className="text-xl sm:text-2xl font-black text-white font-mono">
-                  {(earnings.l2Earnings + earnings.l3Earnings).toLocaleString()} <span className="text-sm text-pink-400 font-bold">AIQX</span>
-                </span>
-                <ArrowUpRight className="w-4 h-4 text-[#6E7681] group-hover:text-pink-400 transition-colors ml-auto mt-1" />
-              </div>
-            </div>
-
-            {/* Visual Tiles */}
-            <div className="my-6">
-              <div className="grid grid-cols-7 gap-2">
-                {Array.from({ length: 14 }).map((_, idx) => {
-                  const lvlNum = idx + 1;
-                  const isUnlocked = activeLevels.includes(lvlNum);
-                  return (
-                    <div
-                      key={lvlNum}
-                      className={`h-9 rounded-xl flex items-center justify-center font-mono text-[10px] font-bold ${
-                        isUnlocked
-                          ? 'bg-pink-600 text-white shadow-[0_0_12px_rgba(236,72,153,0.5)]'
-                          : 'bg-[#261520] text-[#4A5568] border border-[#3D1E32]/60'
-                      }`}
-                    >
-                      {lvlNum}
-                    </div>
-                  );
-                })}
-              </div>
-            </div>
-
-            {/* Bottom Action */}
-            <div className="flex items-center justify-end pt-2">
-              <button
-                onClick={onNavigateToMatrix}
-                className="px-5 py-2.5 rounded-2xl bg-pink-600 hover:bg-pink-500 text-white font-bold text-xs shadow-lg shadow-pink-500/25 flex items-center space-x-1.5 transition-all cursor-pointer"
-              >
-                <span>Preview</span>
-                <span>→</span>
-              </button>
-            </div>
-          </div>
-
-          {/* Program 4: Contribute to Earn & Treasury Slot Pool */}
-          <div className="relative rounded-3xl p-6 bg-gradient-to-br from-[#241A13] via-[#1C140E] to-[#0A0D13] border border-amber-500/20 hover:border-amber-500/40 transition-all shadow-xl group overflow-hidden">
-            {/* Ambient Corner Glow */}
-            <div className="absolute top-0 right-0 w-48 h-48 bg-amber-500/10 rounded-full blur-3xl pointer-events-none" />
-
-            <div className="flex items-start justify-between">
-              <div>
-                <span className="text-2xl font-black text-white tracking-wide">Contribute &amp; Pool</span>
-                <p className="text-xs text-[#8B949E] mt-0.5">15% Treasury Slot Isolation &amp; Grants</p>
-              </div>
-              <div className="text-right">
-                <span className="text-xl sm:text-2xl font-black text-white font-mono">
-                  {(earnings.contributionEarnings || 0).toLocaleString()} <span className="text-sm text-amber-400 font-bold">AIQX</span>
-                </span>
-                <ArrowUpRight className="w-4 h-4 text-[#6E7681] group-hover:text-amber-400 transition-colors ml-auto mt-1" />
-              </div>
-            </div>
-
-            {/* Visual Tiles */}
-            <div className="my-6">
-              <div className="grid grid-cols-7 gap-2">
-                {Array.from({ length: 14 }).map((_, idx) => {
-                  const lvlNum = idx + 1;
-                  const isUnlocked = activeLevels.includes(lvlNum);
-                  return (
-                    <div
-                      key={lvlNum}
-                      className={`h-9 rounded-xl flex items-center justify-center font-mono text-[10px] font-bold ${
-                        isUnlocked
-                          ? 'bg-amber-600 text-white shadow-[0_0_12px_rgba(245,158,11,0.5)]'
-                          : 'bg-[#261B14] text-[#4A5568] border border-[#3D281D]/60'
-                      }`}
-                    >
-                      {lvlNum}
-                    </div>
-                  );
-                })}
-              </div>
-            </div>
-
-            {/* Bottom Action */}
-            <div className="flex items-center justify-end pt-2">
-              <button
-                onClick={onNavigateToContribute}
-                className="px-5 py-2.5 rounded-2xl bg-amber-600 hover:bg-amber-500 text-white font-bold text-xs shadow-lg shadow-amber-500/25 flex items-center space-x-1.5 transition-all cursor-pointer"
-              >
-                <span>Contribute</span>
-                <span>→</span>
-              </button>
+            <div className="pt-2 text-[10px] text-[#6E7681] font-mono border-t border-[#1E2533]">
+              Zero-Burn Policy • Distributed atomically upon slot completion.
             </div>
           </div>
         </div>
       </div>
+
+      {/* FOURTH ROW: THE 14-LEVEL MATRIX SYSTEM (The Heart of the Dashboard) */}
+      <div className="space-y-4 pt-2">
+        {/* Section Header */}
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+          <div className="space-y-1">
+            <div className="flex items-center space-x-2">
+              <Layers className="w-5 h-5 text-blue-400" />
+              <h2 className="text-xl font-black text-white tracking-tight">
+                14-Level Doubling Matrix System
+              </h2>
+            </div>
+            <p className="text-xs text-[#8B949E]">
+              Each level is independent and activated based on your decision. Level 1 slot remains exact &amp; recycles once fulfilled.
+            </p>
+          </div>
+
+          <div className="flex items-center space-x-2">
+            {/* Level 1 Quick Recycle Button if active */}
+            {activeLevels.includes(1) && (
+              <button
+                onClick={handleRecycleLevel1}
+                disabled={isRecyclingL1}
+                className="px-3.5 py-1.5 rounded-xl bg-cyan-600 hover:bg-cyan-500 disabled:opacity-50 text-black font-extrabold text-xs shadow-md shadow-cyan-500/20 flex items-center space-x-1.5 cursor-pointer transition-all"
+                title="Recycle Level 1 Slot: 50 AIQX to Upline, 10 to Treasury, 40 to Top 3 Leaders"
+              >
+                {isRecyclingL1 ? (
+                  <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                ) : (
+                  <Repeat className="w-3.5 h-3.5" />
+                )}
+                <span>Recycle L1 (100 AIQX)</span>
+              </button>
+            )}
+
+            <button
+              onClick={onNavigateToDocs}
+              className="px-3 py-1.5 rounded-xl bg-[#171D27] hover:bg-[#202735] text-xs font-mono text-blue-400 border border-[#1E2533] cursor-pointer transition-colors"
+            >
+              14-Level Math Docs →
+            </button>
+          </div>
+        </div>
+
+        {/* Recycling / Activation feedback notification */}
+        {recycleSuccess && (
+          <div className="p-3 rounded-2xl bg-cyan-950/40 border border-cyan-500/40 text-xs text-cyan-300 flex items-center space-x-2 animate-fadeIn">
+            <CheckCircle2 className="w-4 h-4 text-cyan-400 shrink-0" />
+            <span>{recycleSuccess}</span>
+          </div>
+        )}
+
+        {activationSuccess && (
+          <div className="p-3 rounded-2xl bg-emerald-950/40 border border-emerald-500/40 text-xs text-emerald-300 flex items-center space-x-2 animate-fadeIn">
+            <CheckCircle2 className="w-4 h-4 text-emerald-400 shrink-0" />
+            <span>{activationSuccess}</span>
+          </div>
+        )}
+
+        {activationError && (
+          <div className="p-3 rounded-2xl bg-red-950/40 border border-red-500/40 text-xs text-red-300 flex items-center space-x-2 animate-fadeIn">
+            <AlertCircle className="w-4 h-4 text-red-400 shrink-0" />
+            <span>{activationError}</span>
+          </div>
+        )}
+
+        {/* 14-LEVEL MATRIX GRID */}
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+          {MATRIX_LEVELS_CONFIG.map((lvlConfig) => {
+            const isUnlocked = activeLevels.includes(lvlConfig.level);
+            const isNextInLine =
+              !isUnlocked &&
+              (lvlConfig.level === 1 || activeLevels.includes(lvlConfig.level - 1));
+
+            return (
+              <ForsageSlotCard
+                key={lvlConfig.level}
+                config={lvlConfig}
+                isUnlocked={isUnlocked}
+                isNextInLine={isNextInLine}
+                connected={true}
+                onInspect={(levelNum) => {
+                  const cfg = MATRIX_LEVELS_CONFIG.find((l) => l.level === levelNum);
+                  if (cfg) setInspectingLevel(cfg);
+                }}
+                onActivate={(cfg) => {
+                  setActivatingLevel(cfg);
+                  handleActivateLevel(cfg);
+                }}
+              />
+            );
+          })}
+        </div>
+      </div>
+
+      {/* INTERACTIVE FORSAGE SLOT MODAL */}
+      {inspectingLevel && (
+        <ForsageSlotModal
+          levelConfig={inspectingLevel}
+          isOpen={true}
+          onClose={() => setInspectingLevel(null)}
+          userWallet={user.wallet}
+          userId={memberId}
+          isUnlocked={activeLevels.includes(inspectingLevel.level)}
+          isNextInLine={!activeLevels.includes(inspectingLevel.level)}
+          onActivate={(cfg) => handleActivateLevel(cfg)}
+          connected={true}
+        />
+      )}
     </div>
   );
 };

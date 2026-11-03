@@ -88,7 +88,7 @@ export const MySlotsSection: FC<MySlotsSectionProps> = ({
                 Level {nextLevel} ({nextConfig.totalPackageFee.toLocaleString()} AIQX)
               </div>
               <div className="text-[10px] text-emerald-400 font-mono">
-                Slot Fee to Treasury: {nextConfig.slotActivationFee.toLocaleString()} AIQX
+                15 AIQX Activation • 0 Treasury on Join
               </div>
             </div>
             <button
@@ -121,11 +121,11 @@ export const MySlotsSection: FC<MySlotsSectionProps> = ({
           <span className="text-[10px] text-[#8B949E]">2x Doubling Rule</span>
         </div>
         <div className="p-4 rounded-xl bg-[#0E131C] border border-[#1A2332]">
-          <span className="text-[11px] text-[#8B949E]">Protocol Treasury Fee</span>
-          <p className="text-xl font-bold font-mono text-emerald-400 mt-1">
-            {nextConfig ? `${nextConfig.slotActivationFee.toLocaleString()} AIQX` : '0 AIQX'}
+          <span className="text-[11px] text-[#8B949E]">Slot Recycling Split</span>
+          <p className="text-xl font-bold font-mono text-cyan-400 mt-1">
+            100 AIQX
           </p>
-          <span className="text-[10px] text-emerald-500/80">15% Direct to Treasury</span>
+          <span className="text-[10px] text-[#8B949E]">50 Upline • 10 Treasury • 40 Downline</span>
         </div>
       </div>
 
@@ -282,9 +282,9 @@ export const MySlotsSection: FC<MySlotsSectionProps> = ({
 
                 {/* Footer specs */}
                 <div className="flex items-center justify-between text-[11px] pt-2 border-t border-[#1A2332]">
-                  <span className="text-[#8B949E]">Slot Fee to Treasury (15%):</span>
-                  <span className="font-mono text-emerald-400 font-bold">
-                    {lvl.slotActivationFee.toLocaleString()} AIQX
+                  <span className="text-[#8B949E]">Slot Activation / Recycling:</span>
+                  <span className="font-mono text-cyan-400 font-bold">
+                    15 AIQX / 100 AIQX
                   </span>
                 </div>
               </div>

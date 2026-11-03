@@ -28,20 +28,7 @@ import { SolanaLogo } from './SolanaLogo';
 import { OFFICIAL_AIQX_MINT } from '../lib/marketData';
 import { OFFICIAL_TREASURY_WALLET } from '../lib/referral-engine';
 
-export type NavigationTab =
-  | 'terminal'
-  | 'foundation'
-  | 'matrix-x'
-  | 'my-network'
-  | 'my-slots'
-  | 'referrals'
-  | 'crossover'
-  | 'earnings'
-  | 'contribute'
-  | 'transactions'
-  | 'system-pool'
-  | 'dashboard'
-  | 'docs';
+export type NavigationTab = 'dashboard' | 'terminal' | 'docs';
 
 interface HeaderProps {
   config: AppConfig;
@@ -106,28 +93,10 @@ export const Header: FC<HeaderProps> = ({
     setIsMenuOpen(false);
   };
 
-  const handleTokenGuideClick = () => {
-    setIsMenuOpen(false);
-    onOpenTokenGuide?.();
-  };
-
   const handlePreviewFormSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (previewIdInput.trim()) {
       onPreviewSubmit(previewIdInput.trim());
-    }
-  };
-
-  const handleCopyRefLink = async () => {
-    if (!userWallet) return;
-    try {
-      const refParam = userId ? String(userId) : userWallet;
-      const url = `${window.location.origin}?ref=${refParam}`;
-      await navigator.clipboard.writeText(url);
-      setCopiedRef(true);
-      setTimeout(() => setCopiedRef(false), 2000);
-    } catch (e) {
-      console.warn('Copy failed', e);
     }
   };
 
@@ -141,70 +110,28 @@ export const Header: FC<HeaderProps> = ({
     }
   };
 
-  // Matrix navigation menu items
-  const matrixMenuItems = [
+  // Strictly Dashboard, DEX, and Docs only
+  const navMenuItems = [
     {
       id: 'dashboard' as NavigationTab,
       label: 'Dashboard',
-      description: 'Personal link, team stats, profits sparkline & programs',
+      description: '14-Level Matrix, Slots, Network Track & Profits',
       icon: Activity,
-      badge: 'Main',
-    },
-    {
-      id: 'matrix-x' as NavigationTab,
-      label: 'Programs (Matrix X)',
-      description: '14-Level Doubling Matrix, Slots & Direct Upgrades',
-      icon: Layers,
-      badge: '14 Levels',
+      badge: 'Matrix',
     },
     {
       id: 'terminal' as NavigationTab,
-      label: 'DEX Terminal',
-      description: 'Live Raydium Candlesticks, Market Depth & Instant Swap',
+      label: 'DEX',
+      description: 'Live AMM Swap Terminal & Raydium Candlesticks',
       icon: ArrowDownUp,
-      badge: 'Live AMM',
-    },
-    {
-      id: 'my-network' as NavigationTab,
-      label: 'Partners & Network',
-      description: 'Permanent Sequential ID Tree & Spillover Hierarchy',
-      icon: GitBranch,
-      badge: userId ? `#${userId}` : 'Team',
+      badge: 'Live',
     },
     {
       id: 'docs' as NavigationTab,
-      label: 'Information & Docs',
-      description: 'Full Protocol Manifesto, 14-Level Math & Audit',
+      label: 'Docs',
+      description: 'Protocol Manifesto, 14-Level Math, Audit & Rules',
       icon: BookOpen,
       badge: 'Knowledge',
-    },
-    {
-      id: 'transactions' as NavigationTab,
-      label: 'Stats & Ledger',
-      description: 'On-Chain Explorer Links & Atomic Execution History',
-      icon: Clock,
-      badge: 'Ledger',
-    },
-    {
-      id: 'contribute' as NavigationTab,
-      label: 'Contribute to Earn',
-      description: 'Task Verification, Marketing Grants & Adoption Pool',
-      icon: Cpu,
-      badge: 'Earn',
-    },
-    {
-      id: 'referrals' as NavigationTab,
-      label: 'Join / Onboarding',
-      description: 'ID-Based Links (?ref=ID) & 100 AIQX Activation',
-      icon: Users,
-      badge: 'Join',
-    },
-    {
-      id: 'system-pool' as NavigationTab,
-      label: 'Protocol Treasury',
-      description: '15% System Reserve & Strict Treasury Isolation',
-      icon: Database,
-      badge: 'Treasury',
     },
   ];
 
@@ -213,8 +140,8 @@ export const Header: FC<HeaderProps> = ({
       {/* Forsage-Style Top Bar with Vibrant Royal Blue Background */}
       <header className="sticky top-0 z-40 w-full bg-[#2563EB] shadow-md border-b border-blue-600">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
-          {/* Left: Brand Emblem + Preview ID search input + Go button */}
-          <div className="flex items-center space-x-3 sm:space-x-4">
+          {/* Left: Brand Emblem + Desktop Navigation Buttons */}
+          <div className="flex items-center space-x-3 sm:space-x-5">
             <button
               onClick={() => handleNavClick('dashboard')}
               className="flex items-center space-x-2 focus:outline-none group cursor-pointer"
@@ -226,17 +153,39 @@ export const Header: FC<HeaderProps> = ({
                   className="w-full h-full rounded-full object-cover bg-black"
                 />
               </div>
-              <span className="font-black text-lg text-white tracking-tight hidden sm:inline">
+              <span className="font-black text-lg text-white tracking-tight">
                 AIQX
               </span>
             </button>
 
+            {/* Desktop Quick Nav: Dashboard | DEX | Docs */}
+            <nav className="hidden md:flex items-center space-x-1 bg-blue-700/60 p-1 rounded-2xl border border-blue-400/30">
+              {navMenuItems.map((item) => {
+                const isActive = activeTab === item.id;
+                const Icon = item.icon;
+                return (
+                  <button
+                    key={item.id}
+                    onClick={() => handleNavClick(item.id)}
+                    className={`flex items-center space-x-1.5 px-3 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer ${
+                      isActive
+                        ? 'bg-white text-blue-900 shadow-sm'
+                        : 'text-blue-100 hover:text-white hover:bg-blue-600/60'
+                    }`}
+                  >
+                    <Icon className="w-3.5 h-3.5" />
+                    <span>{item.label}</span>
+                  </button>
+                );
+              })}
+            </nav>
+
             {/* Forsage Preview ID Search Bar */}
             <form
               onSubmit={handlePreviewFormSubmit}
-              className="flex items-center space-x-2 bg-blue-700/60 p-1 rounded-2xl border border-blue-400/40"
+              className="flex items-center space-x-1.5 bg-blue-700/60 p-1 rounded-2xl border border-blue-400/40"
             >
-              <span className="text-xs font-bold text-white px-2 hidden sm:inline">
+              <span className="text-[11px] font-bold text-white px-1.5 hidden sm:inline">
                 Preview ID
               </span>
               <input
@@ -244,11 +193,11 @@ export const Header: FC<HeaderProps> = ({
                 value={previewIdInput}
                 onChange={(e) => setPreviewIdInput(e.target.value)}
                 placeholder="1"
-                className="bg-blue-800 text-white font-mono font-bold text-xs px-3 py-1.5 rounded-xl border border-blue-400/30 w-16 sm:w-24 text-center focus:outline-none focus:ring-1 focus:ring-white placeholder:text-blue-300"
+                className="bg-blue-800 text-white font-mono font-bold text-xs px-2.5 py-1 rounded-xl border border-blue-400/30 w-14 sm:w-20 text-center focus:outline-none focus:ring-1 focus:ring-white placeholder:text-blue-300"
               />
               <button
                 type="submit"
-                className="bg-blue-300 hover:bg-white text-blue-900 font-extrabold text-xs px-3 py-1.5 rounded-xl transition-colors cursor-pointer shadow-sm"
+                className="bg-blue-300 hover:bg-white text-blue-900 font-extrabold text-xs px-2.5 py-1 rounded-xl transition-colors cursor-pointer shadow-sm"
               >
                 Go
               </button>
@@ -283,7 +232,7 @@ export const Header: FC<HeaderProps> = ({
             {/* Hamburger Button for Mobile */}
             <button
               onClick={() => setIsMenuOpen(true)}
-              className="lg:hidden p-2 rounded-xl bg-blue-700/60 hover:bg-blue-700 text-white border border-blue-400/40 cursor-pointer transition-colors flex items-center justify-center"
+              className="md:hidden p-2 rounded-xl bg-blue-700/60 hover:bg-blue-700 text-white border border-blue-400/40 cursor-pointer transition-colors flex items-center justify-center"
               aria-label="Open Navigation Menu"
             >
               <Menu className="w-5 h-5 text-white" />
@@ -333,12 +282,12 @@ export const Header: FC<HeaderProps> = ({
               </button>
             </div>
 
-            {/* Menu Items */}
+            {/* Menu Items - Strictly Dashboard, DEX, Docs only */}
             <div className="p-4 space-y-1">
               <div className="px-3 pb-2 text-[10px] font-mono font-bold uppercase tracking-wider text-[#6E7681]">
-                Platform Sections
+                Navigation
               </div>
-              {matrixMenuItems.map((item) => {
+              {navMenuItems.map((item) => {
                 const Icon = item.icon;
                 const isActive = activeTab === item.id;
                 return (

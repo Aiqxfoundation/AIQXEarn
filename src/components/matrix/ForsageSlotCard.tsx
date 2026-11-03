@@ -254,10 +254,10 @@ export const ForsageSlotCard: FC<ForsageSlotCardProps> = ({
 
       {/* Card Footer: Action Buttons */}
       <div className="pt-2 border-t border-[#1A2332] space-y-2">
-        {/* Treasury Split Transparency */}
+        {/* Slot Activation / Recycle specs */}
         <div className="flex justify-between items-center text-[10px] font-mono text-[#8B949E]">
-          <span>Treasury Slot Fee:</span>
-          <span className="text-emerald-400 font-semibold">{config.slotActivationFee.toLocaleString()} AIQX (15%)</span>
+          <span>Activation / Recycle:</span>
+          <span className="text-cyan-400 font-semibold">{config.slotActivationFee.toLocaleString()} / 100 AIQX</span>
         </div>
 
         {/* Main CTA */}

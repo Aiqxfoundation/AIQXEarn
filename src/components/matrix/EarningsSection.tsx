@@ -22,6 +22,8 @@ interface EarningsSectionProps {
     l2Earnings: number;
     l3Earnings: number;
     crossoverEarnings?: number;
+    uplineRecycleEarnings?: number;
+    downlineRewardEarnings?: number;
     contributionEarnings?: number;
     totalEarnings: number;
     history: EarningsRecord[];
@@ -38,7 +40,8 @@ export const EarningsSection: FC<EarningsSectionProps> = ({
   const [filterCategory, setFilterCategory] = useState<string>('all');
 
   const crossoverTotal = earnings.crossoverEarnings || 0;
-  const contribTotal = earnings.contributionEarnings || 0;
+  const uplineRecycleTotal = earnings.uplineRecycleEarnings || 0;
+  const downlineRewardTotal = earnings.downlineRewardEarnings || 0;
   const totalReceived = earnings.totalEarnings;
   const totalUsd = totalReceived * aiqxPriceUsd;
 
@@ -48,7 +51,8 @@ export const EarningsSection: FC<EarningsSectionProps> = ({
     if (filterCategory === 'indirect') return item.category === 'l2_reward';
     if (filterCategory === 'third_line') return item.category === 'l3_reward';
     if (filterCategory === 'crossover') return item.category === 'crossover_split';
-    if (filterCategory === 'grants') return item.category === 'contribution_grant';
+    if (filterCategory === 'upline_recycle') return item.category === 'upline_recycle';
+    if (filterCategory === 'downline_reward') return item.category === 'downline_leader_reward';
     return true;
   });
 
@@ -60,12 +64,12 @@ export const EarningsSection: FC<EarningsSectionProps> = ({
           <div className="flex items-center space-x-2">
             <span className="w-2.5 h-2.5 rounded-full bg-emerald-400" />
             <span className="text-xs font-mono font-semibold uppercase tracking-wider text-emerald-400">
-              On-Chain Distributed Commissions
+              On-Chain Distributed Commissions &amp; Rewards
             </span>
           </div>
           <h1 className="text-2xl font-bold text-white tracking-tight">Earnings &amp; Compensation</h1>
           <p className="text-xs text-[#8B949E]">
-            Automated direct, indirect, third-line, crossover, and community contribution rewards.
+            Direct (50%), Indirect (30%), Third Line (5%), Crossover, Upline Recycle (50 AIQX) &amp; Downline Rewards (20/12/8 AIQX).
           </p>
         </div>
 
@@ -80,46 +84,54 @@ export const EarningsSection: FC<EarningsSectionProps> = ({
         </div>
       </div>
 
-      {/* 5-Channel Income Breakdown */}
-      <div className="grid grid-cols-2 sm:grid-cols-5 gap-3">
+      {/* 6-Channel Income Breakdown */}
+      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3">
         <div className="p-4 rounded-xl bg-[#11161E] border border-[#1E2533]">
-          <span className="text-[11px] text-[#8B949E]">Direct Income</span>
+          <span className="text-[11px] text-[#8B949E]">Direct (50%)</span>
           <p className="text-xl font-bold font-mono text-[#F5A623] mt-1">
             {earnings.l1Earnings.toLocaleString()} AIQX
           </p>
-          <span className="text-[10px] text-[#4E5766]">50% Direct Referral</span>
+          <span className="text-[10px] text-[#4E5766]">50 AIQX Direct</span>
         </div>
 
         <div className="p-4 rounded-xl bg-[#11161E] border border-[#1E2533]">
-          <span className="text-[11px] text-[#8B949E]">Indirect Income</span>
+          <span className="text-[11px] text-[#8B949E]">Indirect (30%)</span>
           <p className="text-xl font-bold font-mono text-white mt-1">
             {earnings.l2Earnings.toLocaleString()} AIQX
           </p>
-          <span className="text-[10px] text-[#4E5766]">30% Second Line</span>
+          <span className="text-[10px] text-[#4E5766]">30 AIQX Line 2</span>
         </div>
 
         <div className="p-4 rounded-xl bg-[#11161E] border border-[#1E2533]">
-          <span className="text-[11px] text-[#8B949E]">Third-Line Income</span>
+          <span className="text-[11px] text-[#8B949E]">Third Line (5%)</span>
           <p className="text-xl font-bold font-mono text-white mt-1">
             {earnings.l3Earnings.toLocaleString()} AIQX
           </p>
-          <span className="text-[10px] text-[#4E5766]">5% Third Line</span>
+          <span className="text-[10px] text-[#4E5766]">5 AIQX Line 3</span>
         </div>
 
         <div className="p-4 rounded-xl bg-[#11161E] border border-[#1E2533]">
-          <span className="text-[11px] text-[#8B949E]">Crossover Splits</span>
-          <p className="text-xl font-bold font-mono text-emerald-400 mt-1">
+          <span className="text-[11px] text-[#8B949E]">Crossover</span>
+          <p className="text-xl font-bold font-mono text-purple-400 mt-1">
             {crossoverTotal.toLocaleString()} AIQX
           </p>
-          <span className="text-[10px] text-emerald-500/80">Spillover &amp; Splits</span>
+          <span className="text-[10px] text-purple-400/80">Upward Qualified</span>
         </div>
 
-        <div className="p-4 rounded-xl bg-[#11161E] border border-[#1E2533] col-span-2 sm:col-span-1">
-          <span className="text-[11px] text-[#8B949E]">Contribution Rewards</span>
-          <p className="text-xl font-bold font-mono text-blue-400 mt-1">
-            {contribTotal.toLocaleString()} AIQX
+        <div className="p-4 rounded-xl bg-[#11161E] border border-[#1E2533]">
+          <span className="text-[11px] text-[#8B949E]">Upline Recycle</span>
+          <p className="text-xl font-bold font-mono text-cyan-400 mt-1">
+            {uplineRecycleTotal.toLocaleString()} AIQX
           </p>
-          <span className="text-[10px] text-blue-500/80">Contribute to Earn</span>
+          <span className="text-[10px] text-cyan-400/80">50 AIQX per Recycle</span>
+        </div>
+
+        <div className="p-4 rounded-xl bg-[#11161E] border border-[#1E2533]">
+          <span className="text-[11px] text-[#8B949E]">Downline Reward</span>
+          <p className="text-xl font-bold font-mono text-emerald-400 mt-1">
+            {downlineRewardTotal.toLocaleString()} AIQX
+          </p>
+          <span className="text-[10px] text-emerald-400/80">Top 3 (20/12/8 AIQX)</span>
         </div>
       </div>
 
@@ -135,11 +147,12 @@ export const EarningsSection: FC<EarningsSectionProps> = ({
           <div className="flex flex-wrap gap-1.5 text-xs">
             {[
               { id: 'all', label: 'All Payments' },
-              { id: 'direct', label: 'Direct (50%)' },
-              { id: 'indirect', label: 'Indirect (30%)' },
-              { id: 'third_line', label: '3rd Line (5%)' },
+              { id: 'direct', label: 'Direct' },
+              { id: 'indirect', label: 'Indirect' },
+              { id: 'third_line', label: '3rd Line' },
               { id: 'crossover', label: 'Crossover' },
-              { id: 'grants', label: 'Grants' },
+              { id: 'upline_recycle', label: 'Upline Recycle' },
+              { id: 'downline_reward', label: 'Downline Reward' },
             ].map((f) => (
               <button
                 key={f.id}
@@ -175,16 +188,22 @@ export const EarningsSection: FC<EarningsSectionProps> = ({
               </thead>
               <tbody className="divide-y divide-[#1A2230]">
                 {filteredHistory.map((item, idx) => {
-                  const badge =
-                    item.category === 'l1_reward'
-                      ? { label: 'Direct 50%', style: 'text-[#F5A623] bg-[#F5A623]/10 border-[#F5A623]/30' }
-                      : item.category === 'l2_reward'
-                      ? { label: 'Indirect 30%', style: 'text-white bg-[#171D27] border-[#232B3B]' }
-                      : item.category === 'l3_reward'
-                      ? { label: '3rd Line 5%', style: 'text-[#8B949E] bg-[#171D27] border-[#232B3B]' }
-                      : item.category === 'crossover_split'
-                      ? { label: 'Crossover Split', style: 'text-emerald-400 bg-emerald-500/10 border-emerald-500/30' }
-                      : { label: 'Grant', style: 'text-blue-400 bg-blue-500/10 border-blue-500/30' };
+                  let badge = { label: 'Reward', style: 'text-white bg-[#171D27] border-[#232B3B]' };
+                  if (item.category === 'l1_reward') {
+                    badge = { label: 'Direct 50%', style: 'text-[#F5A623] bg-[#F5A623]/10 border-[#F5A623]/30' };
+                  } else if (item.category === 'l2_reward') {
+                    badge = { label: 'Indirect 30%', style: 'text-white bg-[#171D27] border-[#232B3B]' };
+                  } else if (item.category === 'l3_reward') {
+                    badge = { label: '3rd Line 5%', style: 'text-[#8B949E] bg-[#171D27] border-[#232B3B]' };
+                  } else if (item.category === 'crossover_split') {
+                    badge = { label: 'Crossover Split', style: 'text-purple-400 bg-purple-500/10 border-purple-500/30' };
+                  } else if (item.category === 'upline_recycle') {
+                    badge = { label: 'Upline Recycle (50 AIQX)', style: 'text-cyan-400 bg-cyan-500/10 border-cyan-500/30' };
+                  } else if (item.category === 'downline_leader_reward') {
+                    badge = { label: 'Downline Leader Reward', style: 'text-emerald-400 bg-emerald-500/10 border-emerald-500/30' };
+                  } else if (item.category === 'contribution_grant') {
+                    badge = { label: 'Community Grant', style: 'text-blue-400 bg-blue-500/10 border-blue-500/30' };
+                  }
 
                   return (
                     <tr key={idx} className="hover:bg-[#151C27] transition-colors">

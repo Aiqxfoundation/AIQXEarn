@@ -197,8 +197,10 @@ export async function createAtomicJoiningTransaction(params: {
   // Add L3 transfer (5 AIQX to L3 or Treasury reserve)
   addTransfer(distribution.l3Wallet, distribution.l3Amount);
 
-  // Add Slot Activation Fee (15 AIQX) directly to Treasury
-  addTransfer(treasuryWallet, distribution.systemBaseAmount);
+  // Add Slot Activation Fee (15 AIQX)
+  if (distribution.slotActivationAmount > 0) {
+    addTransfer(treasuryWallet, distribution.slotActivationAmount);
+  }
 
   const { blockhash } = await connection.getLatestBlockhash('confirmed');
   transaction.recentBlockhash = blockhash;
