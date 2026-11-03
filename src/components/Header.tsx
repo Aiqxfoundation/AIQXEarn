@@ -14,12 +14,34 @@ import {
   Copy,
   Check,
   ShieldCheck,
+  Layers,
+  Shuffle,
+  Coins,
+  Cpu,
+  Clock,
+  Sparkles,
+  GitBranch,
+  Search,
 } from 'lucide-react';
 import { AppConfig, formatAddress, getExplorerUrl } from '../lib/solana';
 import { SolanaLogo } from './SolanaLogo';
 import { OFFICIAL_AIQX_MINT } from '../lib/marketData';
+import { OFFICIAL_TREASURY_WALLET } from '../lib/referral-engine';
 
-export type NavigationTab = 'terminal' | 'referrals' | 'system-pool' | 'dashboard';
+export type NavigationTab =
+  | 'terminal'
+  | 'foundation'
+  | 'matrix-x'
+  | 'my-network'
+  | 'my-slots'
+  | 'referrals'
+  | 'crossover'
+  | 'earnings'
+  | 'contribute'
+  | 'transactions'
+  | 'system-pool'
+  | 'dashboard'
+  | 'docs';
 
 interface HeaderProps {
   config: AppConfig;
@@ -27,8 +49,15 @@ interface HeaderProps {
   setActiveTab: (tab: NavigationTab) => void;
   isRegistered: boolean;
   userWallet?: string;
+  userId?: number;
   baseTokenPriceUsd?: number;
   onOpenTokenGuide?: () => void;
+  // Forsage Preview ID controls
+  previewIdInput: string;
+  setPreviewIdInput: (val: string) => void;
+  onPreviewSubmit: (id: string) => void;
+  isPreviewMode?: boolean;
+  onClearPreview?: () => void;
 }
 
 export const Header: FC<HeaderProps> = ({
@@ -37,8 +66,14 @@ export const Header: FC<HeaderProps> = ({
   setActiveTab,
   isRegistered,
   userWallet,
+  userId,
   baseTokenPriceUsd = 0.0002613,
   onOpenTokenGuide,
+  previewIdInput,
+  setPreviewIdInput,
+  onPreviewSubmit,
+  isPreviewMode = false,
+  onClearPreview,
 }) => {
   const { publicKey } = useWallet();
   const [isMenuOpen, setIsMenuOpen] = useState<boolean>(false);
@@ -76,10 +111,18 @@ export const Header: FC<HeaderProps> = ({
     onOpenTokenGuide?.();
   };
 
+  const handlePreviewFormSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (previewIdInput.trim()) {
+      onPreviewSubmit(previewIdInput.trim());
+    }
+  };
+
   const handleCopyRefLink = async () => {
     if (!userWallet) return;
     try {
-      const url = `${window.location.origin}?ref=${userWallet}`;
+      const refParam = userId ? String(userId) : userWallet;
+      const url = `${window.location.origin}?ref=${refParam}`;
       await navigator.clipboard.writeText(url);
       setCopiedRef(true);
       setTimeout(() => setCopiedRef(false), 2000);
@@ -98,32 +141,68 @@ export const Header: FC<HeaderProps> = ({
     }
   };
 
-  const navItems = [
+  // Matrix navigation menu items
+  const matrixMenuItems = [
+    {
+      id: 'dashboard' as NavigationTab,
+      label: 'Dashboard',
+      description: 'Personal link, team stats, profits sparkline & programs',
+      icon: Activity,
+      badge: 'Main',
+    },
+    {
+      id: 'matrix-x' as NavigationTab,
+      label: 'Programs (Matrix X)',
+      description: '14-Level Doubling Matrix, Slots & Direct Upgrades',
+      icon: Layers,
+      badge: '14 Levels',
+    },
     {
       id: 'terminal' as NavigationTab,
       label: 'DEX Terminal',
-      description: 'Live Candlestick Chart & Instant Raydium Swap',
+      description: 'Live Raydium Candlesticks, Market Depth & Instant Swap',
       icon: ArrowDownUp,
-      badge: 'Live',
+      badge: 'Live AMM',
+    },
+    {
+      id: 'my-network' as NavigationTab,
+      label: 'Partners & Network',
+      description: 'Permanent Sequential ID Tree & Spillover Hierarchy',
+      icon: GitBranch,
+      badge: userId ? `#${userId}` : 'Team',
+    },
+    {
+      id: 'docs' as NavigationTab,
+      label: 'Information & Docs',
+      description: 'Full Protocol Manifesto, 14-Level Math & Audit',
+      icon: BookOpen,
+      badge: 'Knowledge',
+    },
+    {
+      id: 'transactions' as NavigationTab,
+      label: 'Stats & Ledger',
+      description: 'On-Chain Explorer Links & Atomic Execution History',
+      icon: Clock,
+      badge: 'Ledger',
+    },
+    {
+      id: 'contribute' as NavigationTab,
+      label: 'Contribute to Earn',
+      description: 'Task Verification, Marketing Grants & Adoption Pool',
+      icon: Cpu,
+      badge: 'Earn',
     },
     {
       id: 'referrals' as NavigationTab,
-      label: 'Community Referrals',
-      description: '3-Level Atomic Distribution & 100 AIQX Join',
+      label: 'Join / Onboarding',
+      description: 'ID-Based Links (?ref=ID) & 100 AIQX Activation',
       icon: Users,
-      badge: '50% / 30% / 5%',
-    },
-    {
-      id: 'dashboard' as NavigationTab,
-      label: 'Portfolio Dashboard',
-      description: 'On-Chain Earnings, Member Tree & Balances',
-      icon: Activity,
-      badge: isRegistered ? 'Active' : undefined,
+      badge: 'Join',
     },
     {
       id: 'system-pool' as NavigationTab,
-      label: 'Protocol Pool',
-      description: '15% System Reserve & Ecosystem Treasury',
+      label: 'Protocol Treasury',
+      description: '15% System Reserve & Strict Treasury Isolation',
       icon: Database,
       badge: 'Treasury',
     },
@@ -131,139 +210,94 @@ export const Header: FC<HeaderProps> = ({
 
   return (
     <>
-      <header className="sticky top-0 z-40 w-full border-b border-[#1E2533] bg-[#0B0E11]/95 backdrop-blur-md">
+      {/* Forsage-Style Top Bar with Vibrant Royal Blue Background */}
+      <header className="sticky top-0 z-40 w-full bg-[#2563EB] shadow-md border-b border-blue-600">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
-          {/* Brand Logo & Live Ticker */}
-          <div className="flex items-center space-x-4">
+          {/* Left: Brand Emblem + Preview ID search input + Go button */}
+          <div className="flex items-center space-x-3 sm:space-x-4">
             <button
-              onClick={() => handleNavClick('terminal')}
-              className="flex items-center space-x-3 text-left focus:outline-none group cursor-pointer"
+              onClick={() => handleNavClick('dashboard')}
+              className="flex items-center space-x-2 focus:outline-none group cursor-pointer"
             >
-              <div className="w-9 h-9 rounded-full p-0.5 bg-gradient-to-tr from-[#F5A623] to-[#e59917] shadow-[0_0_14px_rgba(245,166,35,0.3)] group-hover:scale-105 transition-transform flex items-center justify-center">
+              <div className="w-8 h-8 rounded-full p-0.5 bg-white/20 group-hover:scale-105 transition-transform flex items-center justify-center shrink-0">
                 <img
                   src="/aiqx-logo.png"
-                  alt="AIQX Official Emblem"
+                  alt="AIQX Emblem"
                   className="w-full h-full rounded-full object-cover bg-black"
                 />
               </div>
-              <div>
-                <div className="flex items-center space-x-1.5">
-                  <span className="font-extrabold text-lg tracking-tight text-white group-hover:text-[#F5A623] transition-colors">
-                    AIQX
-                  </span>
-                  <span className="px-1.5 py-0.2 rounded text-[10px] font-mono font-bold bg-[#171D27] text-[#F5A623] border border-[#232B3B]">
-                    DEX
-                  </span>
-                </div>
-              </div>
+              <span className="font-black text-lg text-white tracking-tight hidden sm:inline">
+                AIQX
+              </span>
             </button>
 
-            {/* Network indicator with authentic Solana Logo */}
-            <div className="hidden lg:flex items-center space-x-2 px-2.5 py-1 rounded-full bg-[#11161E] border border-[#1E2533] text-xs">
-              <SolanaLogo className="w-3.5 h-3.5" />
-              <span className="text-white font-mono font-semibold text-[11px]">Solana</span>
-              <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
-            </div>
-
-            {/* Live Price Tag */}
-            <div className="hidden sm:flex items-center space-x-1.5 px-2.5 py-1 rounded-md bg-[#11161E] border border-[#1E2533] text-xs font-mono">
-              <span className="text-[#8B949E]">1 AIQX:</span>
-              <span className="text-emerald-400 font-bold">${baseTokenPriceUsd.toFixed(6)}</span>
-            </div>
-          </div>
-
-          {/* Desktop Navigation Tabs (Compact) */}
-          <nav className="hidden md:flex items-center space-x-1">
-            <button
-              onClick={() => handleNavClick('terminal')}
-              className={`px-3 py-1.5 rounded-md text-xs sm:text-sm font-semibold transition-colors flex items-center space-x-1.5 cursor-pointer ${
-                activeTab === 'terminal'
-                  ? 'text-[#F5A623] bg-[#171D27]'
-                  : 'text-[#8B949E] hover:text-white hover:bg-[#11161E]'
-              }`}
+            {/* Forsage Preview ID Search Bar */}
+            <form
+              onSubmit={handlePreviewFormSubmit}
+              className="flex items-center space-x-2 bg-blue-700/60 p-1 rounded-2xl border border-blue-400/40"
             >
-              <ArrowDownUp className="w-3.5 h-3.5" />
-              <span>Terminal</span>
-            </button>
-
-            <button
-              onClick={() => handleNavClick('referrals')}
-              className={`px-3 py-1.5 rounded-md text-xs sm:text-sm font-semibold transition-colors flex items-center space-x-1.5 cursor-pointer ${
-                activeTab === 'referrals'
-                  ? 'text-[#F5A623] bg-[#171D27]'
-                  : 'text-[#8B949E] hover:text-white hover:bg-[#11161E]'
-              }`}
-            >
-              <Users className="w-3.5 h-3.5" />
-              <span>Referrals</span>
-            </button>
-
-            <button
-              onClick={() => handleNavClick('system-pool')}
-              className={`px-3 py-1.5 rounded-md text-xs sm:text-sm font-semibold transition-colors items-center space-x-1.5 cursor-pointer ${
-                activeTab === 'system-pool'
-                  ? 'text-[#F5A623] bg-[#171D27]'
-                  : 'text-[#8B949E] hover:text-white hover:bg-[#11161E]'
-              }`}
-            >
-              <Database className="w-3.5 h-3.5" />
-              <span>Pool</span>
-            </button>
-
-            {publicKey && (
+              <span className="text-xs font-bold text-white px-2 hidden sm:inline">
+                Preview ID
+              </span>
+              <input
+                type="text"
+                value={previewIdInput}
+                onChange={(e) => setPreviewIdInput(e.target.value)}
+                placeholder="1"
+                className="bg-blue-800 text-white font-mono font-bold text-xs px-3 py-1.5 rounded-xl border border-blue-400/30 w-16 sm:w-24 text-center focus:outline-none focus:ring-1 focus:ring-white placeholder:text-blue-300"
+              />
               <button
-                onClick={() => handleNavClick('dashboard')}
-                className={`px-3 py-1.5 rounded-md text-xs sm:text-sm font-semibold transition-colors flex items-center space-x-1.5 cursor-pointer ${
-                  activeTab === 'dashboard'
-                    ? 'text-[#F5A623] bg-[#171D27]'
-                    : 'text-[#8B949E] hover:text-white hover:bg-[#11161E]'
-                }`}
+                type="submit"
+                className="bg-blue-300 hover:bg-white text-blue-900 font-extrabold text-xs px-3 py-1.5 rounded-xl transition-colors cursor-pointer shadow-sm"
               >
-                <Activity className="w-3.5 h-3.5" />
-                <span>Dashboard</span>
-                {isRegistered && <span className="w-1.5 h-1.5 rounded-full bg-emerald-400" />}
+                Go
+              </button>
+            </form>
+
+            {/* Exit Preview pill button if in preview mode */}
+            {isPreviewMode && (
+              <button
+                onClick={onClearPreview}
+                className="px-2.5 py-1 rounded-xl bg-blue-900/80 hover:bg-blue-900 text-white font-mono text-xs flex items-center space-x-1 cursor-pointer transition-colors border border-blue-400/40"
+                title="Exit Preview Mode"
+              >
+                <span className="hidden md:inline">Exit</span>
+                <X className="w-3.5 h-3.5 text-blue-200" />
               </button>
             )}
-          </nav>
+          </div>
 
-          {/* Action Controls, Wallet Button, & Top Hamburger Menu */}
-          <div className="flex items-center space-x-2 sm:space-x-2.5">
-            {/* Token Guide quick button */}
+          {/* Right Action: Connect Wallet & Mobile Menu Toggle */}
+          <div className="flex items-center space-x-3">
+            {/* Price Pill */}
+            <div className="hidden md:flex items-center space-x-1.5 px-3 py-1 rounded-xl bg-blue-700/60 border border-blue-400/30 text-xs font-mono text-white">
+              <span className="text-blue-200">AIQX:</span>
+              <span className="font-bold text-emerald-300">${baseTokenPriceUsd.toFixed(6)}</span>
+            </div>
+
+            {/* Connect Wallet Button (Forsage black button with white bold text) */}
+            <div className="wallet-btn-custom">
+              <WalletMultiButton className="!bg-[#0B0E14] !text-white !font-bold hover:!bg-[#151B26] !h-10 !px-4 !rounded-2xl !text-xs !shadow-lg border border-black/40" />
+            </div>
+
+            {/* Hamburger Button for Mobile */}
             <button
-              onClick={onOpenTokenGuide}
-              className="hidden sm:flex items-center space-x-1.5 px-3 py-1.5 rounded-lg bg-[#141A23] hover:bg-[#1C2432] border border-[#232B3B] text-white hover:text-[#F5A623] text-xs font-semibold cursor-pointer transition-all shadow-sm group"
-              title="AIQX Token Specs & Official Contract Guide"
+              onClick={() => setIsMenuOpen(true)}
+              className="lg:hidden p-2 rounded-xl bg-blue-700/60 hover:bg-blue-700 text-white border border-blue-400/40 cursor-pointer transition-colors flex items-center justify-center"
+              aria-label="Open Navigation Menu"
             >
-              <BookOpen className="w-3.5 h-3.5 text-[#F5A623] group-hover:scale-110 transition-transform" />
-              <span>Token Guide</span>
-            </button>
-
-            {/* Wallet Connect */}
-            <WalletMultiButton className="!bg-[#F5A623] !text-[#0B0E11] !font-bold hover:!bg-[#e59917] !h-9 !px-3.5 !rounded-lg !text-xs !shadow-[0_2px_8px_rgba(245,166,35,0.2)]" />
-
-            {/* Top Hamburger Menu Button (Requested Feature) */}
-            <button
-              onClick={() => setIsMenuOpen((prev) => !prev)}
-              className="p-2 rounded-lg bg-[#141A23] hover:bg-[#1C2432] border border-[#232B3B] text-[#8B949E] hover:text-[#F5A623] transition-colors cursor-pointer flex items-center justify-center focus:outline-none focus:ring-1 focus:ring-[#F5A623]"
-              title="Toggle Pages Navigation Menu"
-              aria-label="Toggle Pages Navigation Menu"
-            >
-              {isMenuOpen ? (
-                <X className="w-5 h-5 text-[#F5A623]" />
-              ) : (
-                <Menu className="w-5 h-5 text-white" />
-              )}
+              <Menu className="w-5 h-5 text-white" />
             </button>
           </div>
         </div>
       </header>
 
-      {/* Hamburger Menu Overlay Drawer */}
+      {/* Hamburger Drawer Modal */}
       {isMenuOpen && (
-        <div className="fixed inset-0 z-50 flex justify-end">
-          {/* Backdrop with blur */}
+        <div className="fixed inset-0 z-50 flex justify-end animate-fadeIn">
+          {/* Backdrop */}
           <div
-            className="fixed inset-0 bg-black/70 backdrop-blur-sm transition-opacity"
+            className="fixed inset-0 bg-black/75 backdrop-blur-sm transition-opacity"
             onClick={() => setIsMenuOpen(false)}
           />
 
@@ -272,7 +306,7 @@ export const Header: FC<HeaderProps> = ({
             {/* Drawer Header */}
             <div className="p-4 sm:p-5 border-b border-[#1E2533] flex items-center justify-between bg-[#11161E]">
               <div className="flex items-center space-x-3">
-                <div className="w-8 h-8 rounded-full p-0.5 bg-gradient-to-tr from-[#F5A623] to-[#e59917] flex items-center justify-center">
+                <div className="w-8 h-8 rounded-full p-0.5 bg-blue-600 flex items-center justify-center">
                   <img
                     src="/aiqx-logo.png"
                     alt="AIQX Emblem"
@@ -280,170 +314,84 @@ export const Header: FC<HeaderProps> = ({
                   />
                 </div>
                 <div>
-                  <h3 className="text-sm font-bold text-white tracking-wide">AIQX PROTOCOL</h3>
-                  <p className="text-[11px] text-[#8B949E] font-mono">Navigation & Ecosystem Menu</p>
+                  <div className="flex items-center space-x-1.5">
+                    <span className="font-extrabold text-sm text-white">AIQX Matrix X</span>
+                    <span className="px-1.5 py-0.5 rounded text-[10px] font-mono bg-blue-600/20 text-blue-400 border border-blue-500/30">
+                      14 Levels
+                    </span>
+                  </div>
+                  <span className="text-[11px] text-[#8B949E] block">Forsage-Style Slot System</span>
                 </div>
               </div>
 
               <button
                 onClick={() => setIsMenuOpen(false)}
-                className="p-1.5 rounded-lg text-[#8B949E] hover:text-white hover:bg-[#171D27] cursor-pointer transition-colors"
-                title="Close Menu"
+                className="p-1.5 rounded-lg text-[#8B949E] hover:text-white hover:bg-[#1E2533] cursor-pointer transition-colors"
+                aria-label="Close Menu"
               >
                 <X className="w-5 h-5" />
               </button>
             </div>
 
-            {/* Price & Network Quick Glance */}
-            <div className="p-4 bg-[#0B0E11] border-b border-[#1E2533] flex items-center justify-between text-xs font-mono">
-              <div className="flex items-center space-x-2">
-                <SolanaLogo className="w-3.5 h-3.5" />
-                <span className="text-white font-semibold">Solana Mainnet</span>
-                <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
+            {/* Menu Items */}
+            <div className="p-4 space-y-1">
+              <div className="px-3 pb-2 text-[10px] font-mono font-bold uppercase tracking-wider text-[#6E7681]">
+                Platform Sections
               </div>
-              <div>
-                <span className="text-[#8B949E] mr-1.5">1 AIQX:</span>
-                <span className="text-emerald-400 font-bold">${baseTokenPriceUsd.toFixed(6)}</span>
-              </div>
-            </div>
-
-            {/* Navigation Page Items */}
-            <div className="p-4 space-y-2 flex-1">
-              <div className="text-[11px] font-mono uppercase tracking-wider text-[#8B949E] px-2 mb-2 font-semibold">
-                Select Page Destination
-              </div>
-
-              {navItems.map((item) => {
+              {matrixMenuItems.map((item) => {
                 const Icon = item.icon;
                 const isActive = activeTab === item.id;
                 return (
                   <button
                     key={item.id}
                     onClick={() => handleNavClick(item.id)}
-                    className={`w-full text-left p-3.5 rounded-xl border transition-all flex items-start space-x-3.5 cursor-pointer group ${
+                    className={`w-full flex items-center justify-between p-3 rounded-xl transition-all cursor-pointer text-left ${
                       isActive
-                        ? 'bg-[#171D27] border-[#F5A623]/60 shadow-[0_0_15px_rgba(245,166,35,0.12)]'
-                        : 'bg-[#11161E] border-[#1E2533] hover:border-[#2D3748] hover:bg-[#141A23]'
+                        ? 'bg-blue-600/15 text-white border border-blue-500/30 font-semibold'
+                        : 'text-[#8B949E] hover:text-white hover:bg-[#161C26]'
                     }`}
                   >
-                    <div
-                      className={`p-2 rounded-lg shrink-0 transition-colors ${
-                        isActive
-                          ? 'bg-[#F5A623] text-[#0B0E11]'
-                          : 'bg-[#171D27] text-[#8B949E] group-hover:text-white'
-                      }`}
-                    >
-                      <Icon className="w-4 h-4" />
-                    </div>
-
-                    <div className="flex-1 min-w-0">
-                      <div className="flex items-center justify-between">
-                        <span
-                          className={`text-sm font-bold truncate ${
-                            isActive ? 'text-[#F5A623]' : 'text-white group-hover:text-[#F5A623]'
-                          }`}
-                        >
-                          {item.label}
-                        </span>
-                        {item.badge && (
-                          <span className="px-1.5 py-0.5 rounded text-[10px] font-mono font-bold bg-[#0B0E11] text-[#F5A623] border border-[#232B3B]">
-                            {item.badge}
-                          </span>
-                        )}
+                    <div className="flex items-center space-x-3">
+                      <Icon
+                        className={`w-4 h-4 shrink-0 ${
+                          isActive ? 'text-blue-400' : 'text-[#6E7681]'
+                        }`}
+                      />
+                      <div>
+                        <div className="text-xs font-bold">{item.label}</div>
+                        <div className="text-[11px] text-[#6E7681] truncate max-w-[200px]">
+                          {item.description}
+                        </div>
                       </div>
-                      <p className="text-[11px] text-[#8B949E] mt-0.5 line-clamp-1">
-                        {item.description}
-                      </p>
                     </div>
-
-                    <ChevronRight
-                      className={`w-4 h-4 shrink-0 mt-2 transition-transform group-hover:translate-x-0.5 ${
-                        isActive ? 'text-[#F5A623]' : 'text-[#4E5766]'
-                      }`}
-                    />
+                    {item.badge && (
+                      <span className="px-1.5 py-0.5 rounded text-[9px] font-mono bg-[#1E2533] text-[#8B949E]">
+                        {item.badge}
+                      </span>
+                    )}
                   </button>
                 );
               })}
-
-              {/* Token Guide Full Modal Link */}
-              <button
-                onClick={handleTokenGuideClick}
-                className="w-full text-left p-3.5 rounded-xl border border-[#1E2533] bg-[#11161E] hover:border-[#2D3748] hover:bg-[#141A23] transition-all flex items-start space-x-3.5 cursor-pointer group"
-              >
-                <div className="p-2 rounded-lg shrink-0 bg-[#171D27] text-[#8B949E] group-hover:text-[#F5A623] transition-colors">
-                  <BookOpen className="w-4 h-4" />
-                </div>
-                <div className="flex-1 min-w-0">
-                  <div className="flex items-center justify-between">
-                    <span className="text-sm font-bold text-white group-hover:text-[#F5A623] transition-colors">
-                      Token Guide & Contract
-                    </span>
-                    <span className="px-1.5 py-0.5 rounded text-[10px] font-mono font-bold bg-[#0B0E11] text-emerald-400 border border-emerald-800/40">
-                      Verified
-                    </span>
-                  </div>
-                  <p className="text-[11px] text-[#8B949E] mt-0.5 line-clamp-1">
-                    SPL Mint, 4.55M Fixed Supply, Raydium AMM pair
-                  </p>
-                </div>
-                <ChevronRight className="w-4 h-4 shrink-0 text-[#4E5766] mt-2 group-hover:translate-x-0.5 transition-transform" />
-              </button>
             </div>
 
-            {/* Drawer Footer with Quick Utilities */}
-            <div className="p-4 border-t border-[#1E2533] bg-[#0B0E11] space-y-3">
-              {/* Copy Referral Link if Registered */}
-              {isRegistered && userWallet && (
-                <div className="p-3 rounded-lg bg-[#11161E] border border-[#1E2533] space-y-2">
-                  <div className="flex items-center justify-between text-[11px]">
-                    <span className="text-[#8B949E] font-medium">Your Referral Link</span>
-                    <span className="text-emerald-400 font-mono text-[10px]">Level 1: 50 AIQX</span>
-                  </div>
-                  <button
-                    onClick={handleCopyRefLink}
-                    className="w-full py-1.5 px-2.5 rounded bg-[#171D27] hover:bg-[#202735] text-[#F5A623] border border-[#232B3B] text-xs font-mono font-semibold flex items-center justify-center space-x-1.5 cursor-pointer transition-colors"
-                  >
-                    {copiedRef ? (
-                      <>
-                        <Check className="w-3.5 h-3.5 text-emerald-400" />
-                        <span>Referral Link Copied!</span>
-                      </>
-                    ) : (
-                      <>
-                        <Copy className="w-3.5 h-3.5" />
-                        <span>Copy My Referral Link</span>
-                      </>
-                    )}
-                  </button>
-                </div>
-              )}
-
-              {/* Official Mint Quick Copy */}
-              <div className="p-3 rounded-lg bg-[#11161E] border border-[#1E2533] space-y-1.5">
-                <div className="flex items-center justify-between text-[11px]">
-                  <span className="text-[#8B949E]">Official AIQX Mint</span>
-                  <button
-                    onClick={handleCopyMint}
-                    className="text-[#F5A623] hover:underline flex items-center space-x-1 text-[10px] cursor-pointer"
-                  >
-                    {copiedMint ? <span>Copied!</span> : <span>Copy Mint</span>}
-                  </button>
-                </div>
-                <div className="text-[11px] font-mono text-white/90 truncate bg-[#0B0E11] p-1.5 rounded border border-[#1E2533]/80">
-                  {OFFICIAL_AIQX_MINT}
-                </div>
+            {/* Drawer Footer */}
+            <div className="mt-auto p-4 border-t border-[#1E2533] bg-[#11161E] space-y-3">
+              <div className="flex items-center justify-between text-xs text-[#8B949E]">
+                <span>AIQX Mint</span>
+                <button
+                  onClick={handleCopyMint}
+                  className="font-mono text-blue-400 hover:underline flex items-center space-x-1 cursor-pointer"
+                >
+                  <span>{copiedMint ? 'Copied!' : 'Copy Mint'}</span>
+                </button>
               </div>
 
-              {/* Explorer Link */}
-              <a
-                href={getExplorerUrl(OFFICIAL_AIQX_MINT, 'token', config.network)}
-                target="_blank"
-                rel="noreferrer"
-                className="w-full py-2 rounded-lg bg-[#141A23] hover:bg-[#1C2432] text-xs font-semibold text-[#8B949E] hover:text-white border border-[#232B3B] flex items-center justify-center space-x-1.5 transition-colors"
-              >
-                <span>View Mint on Solana Explorer</span>
-                <ExternalLink className="w-3 h-3 text-[#F5A623]" />
-              </a>
+              <div className="flex items-center justify-between text-xs text-[#8B949E]">
+                <span>Treasury Wallet</span>
+                <span className="font-mono text-emerald-400 text-[11px]">
+                  {formatAddress(OFFICIAL_TREASURY_WALLET)}
+                </span>
+              </div>
             </div>
           </div>
         </div>

@@ -1,0 +1,104 @@
+{
+  "version": "1.0.0",
+  "name": "aiqx_matrix",
+  "instructions": [
+    {
+      "name": "initialize",
+      "accounts": [
+        { "name": "programState", "isMut": true, "isSigner": false },
+        { "name": "rootUser", "isMut": true, "isSigner": false },
+        { "name": "authority", "isMut": true, "isSigner": true },
+        { "name": "systemProgram", "isMut": false, "isSigner": false }
+      ],
+      "args": [
+        { "name": "tokenMint", "type": "publicKey" },
+        { "name": "treasuryWallet", "type": "publicKey" }
+      ]
+    },
+    {
+      "name": "registerUser",
+      "accounts": [
+        { "name": "programState", "isMut": true, "isSigner": false },
+        { "name": "newUser", "isMut": true, "isSigner": false },
+        { "name": "sponsorAccount", "isMut": true, "isSigner": false },
+        { "name": "payer", "isMut": true, "isSigner": true },
+        { "name": "payerTokenAccount", "isMut": true, "isSigner": false },
+        { "name": "upline1TokenAccount", "isMut": true, "isSigner": false },
+        { "name": "upline2TokenAccount", "isMut": true, "isSigner": false },
+        { "name": "upline3TokenAccount", "isMut": true, "isSigner": false },
+        { "name": "treasuryTokenAccount", "isMut": true, "isSigner": false },
+        { "name": "tokenProgram", "isMut": false, "isSigner": false },
+        { "name": "systemProgram", "isMut": false, "isSigner": false }
+      ],
+      "args": [
+        { "name": "sponsorId", "type": "u64" },
+        { "name": "matrixParentId", "type": "u64" }
+      ]
+    },
+    {
+      "name": "activateLevel",
+      "accounts": [
+        { "name": "programState", "isMut": true, "isSigner": false },
+        { "name": "userAccount", "isMut": true, "isSigner": false },
+        { "name": "payer", "isMut": true, "isSigner": true },
+        { "name": "payerTokenAccount", "isMut": true, "isSigner": false },
+        { "name": "recipient1TokenAccount", "isMut": true, "isSigner": false },
+        { "name": "recipient2TokenAccount", "isMut": true, "isSigner": false },
+        { "name": "recipient3TokenAccount", "isMut": true, "isSigner": false },
+        { "name": "treasuryTokenAccount", "isMut": true, "isSigner": false },
+        { "name": "tokenProgram", "isMut": false, "isSigner": false }
+      ],
+      "args": [
+        { "name": "targetLevel", "type": "u8" }
+      ]
+    }
+  ],
+  "accounts": [
+    {
+      "name": "ProgramState",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          { "name": "authority", "type": "publicKey" },
+          { "name": "tokenMint", "type": "publicKey" },
+          { "name": "treasuryWallet", "type": "publicKey" },
+          { "name": "rootWallet", "type": "publicKey" },
+          { "name": "totalMembers", "type": "u64" },
+          { "name": "totalDistributed", "type": "u64" },
+          { "name": "totalTreasuryCollected", "type": "u64" },
+          { "name": "bump", "type": "u8" }
+        ]
+      }
+    },
+    {
+      "name": "UserAccount",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          { "name": "userId", "type": "u64" },
+          { "name": "wallet", "type": "publicKey" },
+          { "name": "sponsorId", "type": "u64" },
+          { "name": "sponsorWallet", "type": "publicKey" },
+          { "name": "matrixParentId", "type": "u64" },
+          { "name": "registrationTimestamp", "type": "i64" },
+          { "name": "activeLevelsMask", "type": "u16" },
+          { "name": "directReferralsCount", "type": "u32" },
+          { "name": "directEarnings", "type": "u64" },
+          { "name": "indirectEarnings", "type": "u64" },
+          { "name": "thirdLineEarnings", "type": "u64" },
+          { "name": "crossoverEarnings", "type": "u64" },
+          { "name": "totalEarnings", "type": "u64" },
+          { "name": "bump", "type": "u8" }
+        ]
+      }
+    }
+  ],
+  "errors": [
+    { "code": 6000, "name": "UserAlreadyRegistered", "msg": "User is already registered in AIQX Matrix." },
+    { "code": 6001, "name": "SelfReferralProhibited", "msg": "Self-referral is strictly prohibited." },
+    { "code": 6002, "name": "SponsorNotFound", "msg": "Sponsor user account does not exist." },
+    { "code": 6003, "name": "InvalidMatrixLevel", "msg": "Invalid Matrix level. Must be between 1 and 14." },
+    { "code": 6004, "name": "LevelAlreadyActive", "msg": "Requested level is already active for this account." },
+    { "code": 6005, "name": "InvalidTreasuryAddress", "msg": "Treasury wallet address does not match protocol configuration." }
+  ]
+}

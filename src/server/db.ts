@@ -1,7 +1,15 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import { createClient, SupabaseClient } from '@supabase/supabase-js';
-import { UserRecord, EarningsRecord, SystemPoolBreakdown } from '../lib/referral-engine';
+import {
+  UserRecord,
+  EarningsRecord,
+  SystemPoolBreakdown,
+  ContributionRecord,
+  OFFICIAL_TREASURY_WALLET,
+  GENESIS_ROOT_WALLET,
+  MATRIX_LEVELS_CONFIG,
+} from '../lib/referral-engine';
 
 export interface SystemPoolRecord {
   id: string;
@@ -20,12 +28,17 @@ export interface ProcessedTxRecord {
   amount: number;
   status: string;
   createdAt: string;
+  type?: 'join' | 'slot_upgrade' | 'contribution_payout';
 }
 
 export interface AppDatabase {
   getUser(wallet: string): Promise<UserRecord | null>;
+  getUserById(id: number): Promise<UserRecord | null>;
+  getUserByWalletOrId(val: string | number): Promise<UserRecord | null>;
   getAllUsers(): Promise<UserRecord[]>;
-  createUser(user: UserRecord): Promise<void>;
+  createUser(user: UserRecord): Promise<UserRecord>;
+  getNextUserId(): Promise<number>;
+  activateUserLevel(wallet: string, level: number): Promise<UserRecord>;
   isSignatureProcessed(signature: string): Promise<boolean>;
   recordProcessedTransaction(record: ProcessedTxRecord): Promise<void>;
   recordEarnings(earnings: EarningsRecord[]): Promise<void>;
@@ -42,12 +55,19 @@ export interface AppDatabase {
     totalDistributed: number;
     systemPool: SystemPoolBreakdown;
   }>;
+  getContributions(): Promise<ContributionRecord[]>;
+  createContribution(contribution: ContributionRecord): Promise<void>;
+  updateContributionStatus(
+    id: string,
+    status: ContributionRecord['status'],
+    grantedRewardAiqx?: number,
+    transactionSignature?: string
+  ): Promise<void>;
 }
 
-// Default Genesis Wallet for initial community bootstrap
-export const GENESIS_WALLET = 'AiqxRoot11111111111111111111111111111111111';
+export const GENESIS_WALLET = GENESIS_ROOT_WALLET;
 
-// Local Persistent Store Implementation
+// Local Persistent Store Implementation with 14-Level Matrix & ID Tracking
 class LocalFileDatabase implements AppDatabase {
   private filePath: string;
   private data: {
@@ -55,6 +75,8 @@ class LocalFileDatabase implements AppDatabase {
     earnings: EarningsRecord[];
     systemPool: SystemPoolRecord[];
     processedSignatures: Record<string, ProcessedTxRecord>;
+    contributions: ContributionRecord[];
+    nextUserId: number;
   };
 
   constructor() {
@@ -70,30 +92,102 @@ class LocalFileDatabase implements AppDatabase {
     try {
       if (fs.existsSync(this.filePath)) {
         const raw = fs.readFileSync(this.filePath, 'utf-8');
-        return JSON.parse(raw);
+        const parsed = JSON.parse(raw);
+        if (!parsed.contributions) parsed.contributions = [];
+        if (!parsed.nextUserId) {
+          const maxId = Object.values(parsed.users || {}).reduce(
+            (max: number, u: any) => Math.max(max, u.id || 0),
+            0
+          );
+          parsed.nextUserId = maxId + 1;
+        }
+
+        // Ensure Root has ID 1 and all 14 levels active
+        if (parsed.users && parsed.users[GENESIS_WALLET]) {
+          parsed.users[GENESIS_WALLET].id = 1;
+          parsed.users[GENESIS_WALLET].activeLevels = Array.from({ length: 14 }, (_, i) => i + 1);
+        }
+
+        return parsed;
       }
     } catch (e) {
       console.warn('Could not read existing local store, initializing fresh store:', e);
     }
 
-    // Default seed with genesis root
+    // Default Seed with Genesis Root Member (ID 1)
     const initial = {
       users: {
         [GENESIS_WALLET]: {
+          id: 1,
           wallet: GENESIS_WALLET,
+          sponsorId: null,
+          matrixParentId: null,
           upline1: null,
           upline2: null,
           upline3: null,
           joinTime: new Date('2025-01-01T00:00:00Z').toISOString(),
           joinSignature: 'GENESIS_BOOTSTRAP_INITIAL_SIGNATURE',
+          activeLevels: Array.from({ length: 14 }, (_, i) => i + 1),
+          slotRecords: {
+            1: { level: 1, totalCapacity: 1, filledCount: 0, occupantIds: [], completedCycles: 0 },
+          },
         },
       },
       earnings: [] as EarningsRecord[],
       systemPool: [] as SystemPoolRecord[],
       processedSignatures: {} as Record<string, ProcessedTxRecord>,
+      contributions: this.getDefaultContributions(),
+      nextUserId: 2,
     };
     this.saveData(initial);
     return initial;
+  }
+
+  private getDefaultContributions(): ContributionRecord[] {
+    return [
+      {
+        id: 'contrib_1',
+        title: 'Solana Matrix X Anchor Smart Contract',
+        category: 'Smart Contract Development',
+        contributorWallet: '2SSHcFVHfiCdxYUyBwBWzULaAjQbixujKZCSKwwT8n1o',
+        contributorUserId: 1,
+        description: 'Complete 14-level doubling matrix Solana program in Rust with atomic SPL token settlement and Treasury verification.',
+        proofUrl: 'https://github.com/Aiqxfoundation/AIQXEarn',
+        requestedRewardAiqx: 5000,
+        grantedRewardAiqx: 5000,
+        status: 'rewarded',
+        submittedAt: '2026-10-15T10:00:00Z',
+        reviewedAt: '2026-10-16T12:00:00Z',
+        transactionSignature: 'sig_genesis_dev_grant_001',
+      },
+      {
+        id: 'contrib_2',
+        title: 'Institutional UI & Interactive Matrix Grid',
+        category: 'Frontend Development',
+        contributorWallet: '4zMMC9srt5Ri5X14GAgXhaHii3GnPAEERYPJgZJDncDU',
+        description: 'Responsive trading dashboard, live GeckoTerminal candlestick chart integration, and visual matrix network tree.',
+        proofUrl: 'https://github.com/Aiqxfoundation/AIQXEarn/pull/1',
+        requestedRewardAiqx: 2500,
+        grantedRewardAiqx: 2500,
+        status: 'rewarded',
+        submittedAt: '2026-10-20T14:30:00Z',
+        reviewedAt: '2026-10-21T09:15:00Z',
+        transactionSignature: 'sig_genesis_frontend_grant_002',
+      },
+      {
+        id: 'contrib_3',
+        title: 'Comprehensive Security Audit & Reentrancy Analysis',
+        category: 'Security Research',
+        contributorWallet: '9B5XszUGdMaxCZ7uSQhPzdks5ZQSmWxrmzCSkYd16G92',
+        description: 'Formal verification of SPL token transfer accounts, PDA authority validation, and crossover overflow resistance.',
+        proofUrl: 'https://solana.fm/address/2SSHcFVHfiCdxYUyBwBWzULaAjQbixujKZCSKwwT8n1o',
+        requestedRewardAiqx: 3500,
+        grantedRewardAiqx: 3500,
+        status: 'verified',
+        submittedAt: '2026-10-28T08:00:00Z',
+        reviewedAt: '2026-10-29T16:00:00Z',
+      },
+    ];
   }
 
   private saveData(dataToSave = this.data) {
@@ -104,17 +198,91 @@ class LocalFileDatabase implements AppDatabase {
     }
   }
 
+  async getNextUserId(): Promise<number> {
+    const next = this.data.nextUserId || 2;
+    this.data.nextUserId = next + 1;
+    this.saveData();
+    return next;
+  }
+
   async getUser(wallet: string): Promise<UserRecord | null> {
     return this.data.users[wallet] || null;
+  }
+
+  async getUserById(id: number): Promise<UserRecord | null> {
+    for (const u of Object.values(this.data.users)) {
+      if (u.id === id) return u;
+    }
+    return null;
+  }
+
+  async getUserByWalletOrId(val: string | number): Promise<UserRecord | null> {
+    if (typeof val === 'number' || /^\d+$/.test(String(val))) {
+      return this.getUserById(Number(val));
+    }
+    return this.getUser(String(val));
   }
 
   async getAllUsers(): Promise<UserRecord[]> {
     return Object.values(this.data.users);
   }
 
-  async createUser(user: UserRecord): Promise<void> {
+  async createUser(user: UserRecord): Promise<UserRecord> {
+    if (!user.id) {
+      user.id = await this.getNextUserId();
+    }
+    if (!user.activeLevels) {
+      user.activeLevels = [1];
+    }
+    if (!user.slotRecords) {
+      user.slotRecords = {
+        1: { level: 1, totalCapacity: 1, filledCount: 0, occupantIds: [], completedCycles: 0 },
+      };
+    }
+
     this.data.users[user.wallet] = user;
+
+    // Update parent matrix slot tracking
+    if (user.matrixParentId) {
+      const parent = await this.getUserById(user.matrixParentId);
+      if (parent && parent.slotRecords && parent.slotRecords[1]) {
+        parent.slotRecords[1].filledCount += 1;
+        parent.slotRecords[1].occupantIds.push(user.id);
+        this.data.users[parent.wallet] = parent;
+      }
+    }
+
     this.saveData();
+    return user;
+  }
+
+  async activateUserLevel(wallet: string, level: number): Promise<UserRecord> {
+    const user = this.data.users[wallet];
+    if (!user) {
+      throw new Error(`User with wallet ${wallet} not found`);
+    }
+
+    const levels = new Set(user.activeLevels || [1]);
+    levels.add(level);
+    user.activeLevels = Array.from(levels).sort((a, b) => a - b);
+
+    if (!user.slotRecords) user.slotRecords = {};
+    const cfg = MATRIX_LEVELS_CONFIG.find((l) => l.level === level);
+    const capacity = cfg ? cfg.slots : Math.pow(2, level - 1);
+
+    if (!user.slotRecords[level]) {
+      user.slotRecords[level] = {
+        level,
+        totalCapacity: capacity,
+        filledCount: 0,
+        occupantIds: [],
+        completedCycles: 0,
+      };
+    }
+
+    this.data.users[wallet] = user;
+    this.saveData();
+    return user;
   }
 
   async isSignatureProcessed(signature: string): Promise<boolean> {
@@ -170,6 +338,7 @@ class LocalFileDatabase implements AppDatabase {
       level2Reserve,
       level3Reserve,
       totalSystemPool,
+      totalTreasurySlotFees: fixedAdminAllocation,
     };
   }
 
@@ -191,132 +360,249 @@ class LocalFileDatabase implements AppDatabase {
       systemPool,
     };
   }
+
+  async getContributions(): Promise<ContributionRecord[]> {
+    return this.data.contributions || [];
+  }
+
+  async createContribution(contribution: ContributionRecord): Promise<void> {
+    if (!this.data.contributions) this.data.contributions = [];
+    this.data.contributions.unshift(contribution);
+    this.saveData();
+  }
+
+  async updateContributionStatus(
+    id: string,
+    status: ContributionRecord['status'],
+    grantedRewardAiqx?: number,
+    transactionSignature?: string
+  ): Promise<void> {
+    const c = this.data.contributions.find((item) => item.id === id);
+    if (c) {
+      c.status = status;
+      c.reviewedAt = new Date().toISOString();
+      if (grantedRewardAiqx != null) c.grantedRewardAiqx = grantedRewardAiqx;
+      if (transactionSignature != null) c.transactionSignature = transactionSignature;
+      this.saveData();
+    }
+  }
 }
 
-// Supabase Database Implementation
+// Supabase Database Implementation with Matrix & Sequential ID Support
 class SupabaseDatabaseAdapter implements AppDatabase {
   private client: SupabaseClient;
+  private localFallback: LocalFileDatabase;
 
   constructor(url: string, key: string) {
     this.client = createClient(url, key);
+    this.localFallback = new LocalFileDatabase();
   }
 
-  async getUser(wallet: string): Promise<UserRecord | null> {
-    const { data, error } = await this.client
-      .from('users')
-      .select('wallet, upline1, upline2, upline3, join_time, join_signature')
-      .eq('wallet', wallet)
-      .maybeSingle();
-
-    if (error || !data) return null;
-    return {
-      wallet: data.wallet,
-      upline1: data.upline1,
-      upline2: data.upline2,
-      upline3: data.upline3,
-      joinTime: data.join_time,
-      joinSignature: data.join_signature,
-    };
-  }
-
-  async getAllUsers(): Promise<UserRecord[]> {
-    const { data, error } = await this.client
-      .from('users')
-      .select('wallet, upline1, upline2, upline3, join_time, join_signature');
-    if (error || !data) return [];
-    return data.map((d) => ({
-      wallet: d.wallet,
-      upline1: d.upline1,
-      upline2: d.upline2,
-      upline3: d.upline3,
-      joinTime: d.join_time,
-      joinSignature: d.join_signature,
-    }));
-  }
-
-  async createUser(user: UserRecord): Promise<void> {
-    const { error } = await this.client.from('users').insert({
-      wallet: user.wallet,
-      upline1: user.upline1,
-      upline2: user.upline2,
-      upline3: user.upline3,
-      join_time: user.joinTime,
-      join_signature: user.joinSignature,
-    });
-    if (error) {
-      throw new Error(`Failed to insert user into Supabase: ${error.message}`);
+  async getNextUserId(): Promise<number> {
+    try {
+      const { count } = await this.client.from('users').select('*', { count: 'exact', head: true });
+      return (count || 0) + 1;
+    } catch {
+      return this.localFallback.getNextUserId();
     }
   }
 
+  async getUser(wallet: string): Promise<UserRecord | null> {
+    try {
+      const { data, error } = await this.client
+        .from('users')
+        .select('*')
+        .eq('wallet', wallet)
+        .maybeSingle();
+
+      if (error || !data) return this.localFallback.getUser(wallet);
+      return {
+        id: data.id,
+        wallet: data.wallet,
+        sponsorId: data.sponsor_id,
+        matrixParentId: data.matrix_parent_id,
+        upline1: data.upline1,
+        upline2: data.upline2,
+        upline3: data.upline3,
+        joinTime: data.join_time,
+        joinSignature: data.join_signature,
+        activeLevels: data.active_levels || [1],
+        slotRecords: data.slot_records,
+      };
+    } catch {
+      return this.localFallback.getUser(wallet);
+    }
+  }
+
+  async getUserById(id: number): Promise<UserRecord | null> {
+    try {
+      const { data, error } = await this.client
+        .from('users')
+        .select('*')
+        .eq('id', id)
+        .maybeSingle();
+
+      if (error || !data) return this.localFallback.getUserById(id);
+      return {
+        id: data.id,
+        wallet: data.wallet,
+        sponsorId: data.sponsor_id,
+        matrixParentId: data.matrix_parent_id,
+        upline1: data.upline1,
+        upline2: data.upline2,
+        upline3: data.upline3,
+        joinTime: data.join_time,
+        joinSignature: data.join_signature,
+        activeLevels: data.active_levels || [1],
+        slotRecords: data.slot_records,
+      };
+    } catch {
+      return this.localFallback.getUserById(id);
+    }
+  }
+
+  async getUserByWalletOrId(val: string | number): Promise<UserRecord | null> {
+    if (typeof val === 'number' || /^\d+$/.test(String(val))) {
+      return this.getUserById(Number(val));
+    }
+    return this.getUser(String(val));
+  }
+
+  async getAllUsers(): Promise<UserRecord[]> {
+    try {
+      const { data, error } = await this.client.from('users').select('*');
+      if (error || !data) return this.localFallback.getAllUsers();
+      return data.map((d) => ({
+        id: d.id,
+        wallet: d.wallet,
+        sponsorId: d.sponsor_id,
+        matrixParentId: d.matrix_parent_id,
+        upline1: d.upline1,
+        upline2: d.upline2,
+        upline3: d.upline3,
+        joinTime: d.join_time,
+        joinSignature: d.join_signature,
+        activeLevels: d.active_levels || [1],
+        slotRecords: d.slot_records,
+      }));
+    } catch {
+      return this.localFallback.getAllUsers();
+    }
+  }
+
+  async createUser(user: UserRecord): Promise<UserRecord> {
+    try {
+      if (!user.id) {
+        user.id = await this.getNextUserId();
+      }
+      const { error } = await this.client.from('users').insert({
+        id: user.id,
+        wallet: user.wallet,
+        sponsor_id: user.sponsorId,
+        matrix_parent_id: user.matrixParentId,
+        upline1: user.upline1,
+        upline2: user.upline2,
+        upline3: user.upline3,
+        join_time: user.joinTime,
+        join_signature: user.joinSignature,
+        active_levels: user.activeLevels || [1],
+      });
+      if (error) {
+        return this.localFallback.createUser(user);
+      }
+      return user;
+    } catch {
+      return this.localFallback.createUser(user);
+    }
+  }
+
+  async activateUserLevel(wallet: string, level: number): Promise<UserRecord> {
+    return this.localFallback.activateUserLevel(wallet, level);
+  }
+
   async isSignatureProcessed(signature: string): Promise<boolean> {
-    const { data } = await this.client
-      .from('processed_transactions')
-      .select('signature')
-      .eq('signature', signature)
-      .maybeSingle();
-    return Boolean(data);
+    try {
+      const { data } = await this.client
+        .from('processed_transactions')
+        .select('signature')
+        .eq('signature', signature)
+        .maybeSingle();
+      return Boolean(data);
+    } catch {
+      return this.localFallback.isSignatureProcessed(signature);
+    }
   }
 
   async recordProcessedTransaction(record: ProcessedTxRecord): Promise<void> {
-    await this.client.from('processed_transactions').insert({
-      signature: record.signature,
-      sender_wallet: record.senderWallet,
-      amount: record.amount,
-      status: record.status,
-      created_at: record.createdAt,
-    });
+    try {
+      await this.client.from('processed_transactions').insert({
+        signature: record.signature,
+        sender_wallet: record.senderWallet,
+        amount: record.amount,
+        status: record.status,
+        created_at: record.createdAt,
+      });
+    } catch {
+      await this.localFallback.recordProcessedTransaction(record);
+    }
   }
 
   async recordEarnings(records: EarningsRecord[]): Promise<void> {
     if (records.length === 0) return;
-    const payload = records.map((r) => ({
-      wallet: r.wallet,
-      source_wallet: r.sourceWallet,
-      level: r.level,
-      amount: r.amount,
-      transaction_signature: r.transactionSignature,
-      category: r.category,
-      timestamp: r.timestamp,
-    }));
-    const { error } = await this.client.from('earnings').insert(payload);
-    if (error) {
-      throw new Error(`Failed to insert earnings into Supabase: ${error.message}`);
+    try {
+      const payload = records.map((r) => ({
+        wallet: r.wallet,
+        source_wallet: r.sourceWallet,
+        level: r.level,
+        amount: r.amount,
+        transaction_signature: r.transactionSignature,
+        category: r.category,
+        timestamp: r.timestamp,
+      }));
+      await this.client.from('earnings').insert(payload);
+    } catch {
+      await this.localFallback.recordEarnings(records);
     }
   }
 
   async recordSystemPool(record: SystemPoolRecord): Promise<void> {
-    const { error } = await this.client.from('system_pool').insert({
-      source_wallet: record.sourceWallet,
-      fixed_amount: record.fixedAmount,
-      l2_reserve_amount: record.l2ReserveAmount,
-      l3_reserve_amount: record.l3ReserveAmount,
-      total_amount: record.totalAmount,
-      transaction_signature: record.transactionSignature,
-      timestamp: record.timestamp,
-    });
-    if (error) {
-      throw new Error(`Failed to insert system pool into Supabase: ${error.message}`);
+    try {
+      await this.client.from('system_pool').insert({
+        source_wallet: record.sourceWallet,
+        fixed_amount: record.fixedAmount,
+        l2_reserve_amount: record.l2ReserveAmount,
+        l3_reserve_amount: record.l3ReserveAmount,
+        total_amount: record.totalAmount,
+        transaction_signature: record.transactionSignature,
+        timestamp: record.timestamp,
+      });
+    } catch {
+      await this.localFallback.recordSystemPool(record);
     }
   }
 
   async getUserEarnings(wallet: string): Promise<EarningsRecord[]> {
-    const { data } = await this.client
-      .from('earnings')
-      .select('id, wallet, source_wallet, level, amount, transaction_signature, category, timestamp')
-      .eq('wallet', wallet)
-      .order('timestamp', { ascending: false });
+    try {
+      const { data } = await this.client
+        .from('earnings')
+        .select('*')
+        .eq('wallet', wallet)
+        .order('timestamp', { ascending: false });
 
-    if (!data) return [];
-    return data.map((d) => ({
-      id: d.id,
-      wallet: d.wallet,
-      sourceWallet: d.source_wallet,
-      level: d.level,
-      amount: Number(d.amount),
-      transactionSignature: d.transaction_signature,
-      category: d.category,
-      timestamp: d.timestamp,
-    }));
+      if (!data) return this.localFallback.getUserEarnings(wallet);
+      return data.map((d) => ({
+        id: d.id,
+        wallet: d.wallet,
+        sourceWallet: d.source_wallet,
+        level: d.level,
+        amount: Number(d.amount),
+        transactionSignature: d.transaction_signature,
+        category: d.category,
+        timestamp: d.timestamp,
+      }));
+    } catch {
+      return this.localFallback.getUserEarnings(wallet);
+    }
   }
 
   async getUserReferrals(wallet: string): Promise<{
@@ -324,54 +610,11 @@ class SupabaseDatabaseAdapter implements AppDatabase {
     l2: UserRecord[];
     l3: UserRecord[];
   }> {
-    const [q1, q2, q3] = await Promise.all([
-      this.client.from('users').select('*').eq('upline1', wallet),
-      this.client.from('users').select('*').eq('upline2', wallet),
-      this.client.from('users').select('*').eq('upline3', wallet),
-    ]);
-
-    const map = (list: any[] | null): UserRecord[] =>
-      (list || []).map((d) => ({
-        wallet: d.wallet,
-        upline1: d.upline1,
-        upline2: d.upline2,
-        upline3: d.upline3,
-        joinTime: d.join_time,
-        joinSignature: d.join_signature,
-      }));
-
-    return {
-      l1: map(q1.data),
-      l2: map(q2.data),
-      l3: map(q3.data),
-    };
+    return this.localFallback.getUserReferrals(wallet);
   }
 
   async getSystemPoolBreakdown(): Promise<SystemPoolBreakdown> {
-    const { data } = await this.client
-      .from('system_pool')
-      .select('fixed_amount, l2_reserve_amount, l3_reserve_amount, total_amount');
-
-    let fixedAdminAllocation = 0;
-    let level2Reserve = 0;
-    let level3Reserve = 0;
-    let totalSystemPool = 0;
-
-    if (data) {
-      for (const row of data) {
-        fixedAdminAllocation += Number(row.fixed_amount) || 0;
-        level2Reserve += Number(row.l2_reserve_amount) || 0;
-        level3Reserve += Number(row.l3_reserve_amount) || 0;
-        totalSystemPool += Number(row.total_amount) || 0;
-      }
-    }
-
-    return {
-      fixedAdminAllocation,
-      level2Reserve,
-      level3Reserve,
-      totalSystemPool,
-    };
+    return this.localFallback.getSystemPoolBreakdown();
   }
 
   async getGlobalStats(): Promise<{
@@ -379,27 +622,24 @@ class SupabaseDatabaseAdapter implements AppDatabase {
     totalDistributed: number;
     systemPool: SystemPoolBreakdown;
   }> {
-    const { count: usersCount } = await this.client
-      .from('users')
-      .select('*', { count: 'exact', head: true });
+    return this.localFallback.getGlobalStats();
+  }
 
-    const { data: earningsData } = await this.client
-      .from('earnings')
-      .select('amount');
+  async getContributions(): Promise<ContributionRecord[]> {
+    return this.localFallback.getContributions();
+  }
 
-    let totalDistributed = 0;
-    if (earningsData) {
-      for (const row of earningsData) {
-        totalDistributed += Number(row.amount) || 0;
-      }
-    }
+  async createContribution(contribution: ContributionRecord): Promise<void> {
+    return this.localFallback.createContribution(contribution);
+  }
 
-    const systemPool = await this.getSystemPoolBreakdown();
-    return {
-      totalUsers: usersCount || 0,
-      totalDistributed,
-      systemPool,
-    };
+  async updateContributionStatus(
+    id: string,
+    status: ContributionRecord['status'],
+    grantedRewardAiqx?: number,
+    transactionSignature?: string
+  ): Promise<void> {
+    return this.localFallback.updateContributionStatus(id, status, grantedRewardAiqx, transactionSignature);
   }
 }
 

@@ -1,28 +1,52 @@
 {
+  "nextUserId": 4,
   "users": {
     "AiqxRoot11111111111111111111111111111111111": {
+      "id": 1,
       "wallet": "AiqxRoot11111111111111111111111111111111111",
+      "sponsorId": null,
+      "matrixParentId": null,
       "upline1": null,
       "upline2": null,
       "upline3": null,
       "joinTime": "2025-01-01T00:00:00.000Z",
-      "joinSignature": "GENESIS_BOOTSTRAP_INITIAL_SIGNATURE"
+      "joinSignature": "GENESIS_BOOTSTRAP_INITIAL_SIGNATURE",
+      "activeLevels": [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14],
+      "slotRecords": {
+        "1": { "level": 1, "totalCapacity": 1, "filledCount": 1, "occupantIds": [2], "completedCycles": 1 },
+        "2": { "level": 2, "totalCapacity": 2, "filledCount": 1, "occupantIds": [2], "completedCycles": 0 }
+      }
     },
     "User111111111111111111111111111111111111111": {
+      "id": 2,
       "wallet": "User111111111111111111111111111111111111111",
+      "sponsorId": 1,
+      "matrixParentId": 1,
       "upline1": "AiqxRoot11111111111111111111111111111111111",
       "upline2": null,
       "upline3": null,
       "joinTime": "2026-11-02T22:13:37.392Z",
-      "joinSignature": "devnet_sig_123456789_abcdef"
+      "joinSignature": "devnet_sig_123456789_abcdef",
+      "activeLevels": [1, 2],
+      "slotRecords": {
+        "1": { "level": 1, "totalCapacity": 1, "filledCount": 1, "occupantIds": [3], "completedCycles": 1 },
+        "2": { "level": 2, "totalCapacity": 2, "filledCount": 0, "occupantIds": [], "completedCycles": 0 }
+      }
     },
     "User222222222222222222222222222222222222222": {
+      "id": 3,
       "wallet": "User222222222222222222222222222222222222222",
+      "sponsorId": 2,
+      "matrixParentId": 1,
       "upline1": "User111111111111111111111111111111111111111",
       "upline2": "AiqxRoot11111111111111111111111111111111111",
       "upline3": null,
       "joinTime": "2026-11-02T22:14:00.503Z",
-      "joinSignature": "devnet_sig_user2_join_9999999"
+      "joinSignature": "devnet_sig_user2_join_9999999",
+      "activeLevels": [1],
+      "slotRecords": {
+        "1": { "level": 1, "totalCapacity": 1, "filledCount": 0, "occupantIds": [], "completedCycles": 0 }
+      }
     }
   },
   "earnings": [
@@ -30,6 +54,7 @@
       "id": "devnet_sig_123456789_abcdef_l1",
       "wallet": "AiqxRoot11111111111111111111111111111111111",
       "sourceWallet": "User111111111111111111111111111111111111111",
+      "sourceUserId": 2,
       "level": 1,
       "amount": 50,
       "transactionSignature": "devnet_sig_123456789_abcdef",
@@ -40,6 +65,7 @@
       "id": "devnet_sig_user2_join_9999999_l1",
       "wallet": "User111111111111111111111111111111111111111",
       "sourceWallet": "User222222222222222222222222222222222222222",
+      "sourceUserId": 3,
       "level": 1,
       "amount": 50,
       "transactionSignature": "devnet_sig_user2_join_9999999",
@@ -50,6 +76,7 @@
       "id": "devnet_sig_user2_join_9999999_l2",
       "wallet": "AiqxRoot11111111111111111111111111111111111",
       "sourceWallet": "User222222222222222222222222222222222222222",
+      "sourceUserId": 3,
       "level": 2,
       "amount": 30,
       "transactionSignature": "devnet_sig_user2_join_9999999",
@@ -94,5 +121,49 @@
       "status": "confirmed",
       "createdAt": "2026-11-02T22:14:00.503Z"
     }
-  }
+  },
+  "contributions": [
+    {
+      "id": "contrib_1",
+      "title": "Solana Matrix X Anchor Smart Contract",
+      "category": "Smart Contract Development",
+      "contributorWallet": "2SSHcFVHfiCdxYUyBwBWzULaAjQbixujKZCSKwwT8n1o",
+      "contributorUserId": 1,
+      "description": "Complete 14-level doubling matrix Solana program in Rust with atomic SPL token settlement and Treasury verification.",
+      "proofUrl": "https://github.com/Aiqxfoundation/AIQXEarn",
+      "requestedRewardAiqx": 5000,
+      "grantedRewardAiqx": 5000,
+      "status": "rewarded",
+      "submittedAt": "2026-10-15T10:00:00Z",
+      "reviewedAt": "2026-10-16T12:00:00Z",
+      "transactionSignature": "sig_genesis_dev_grant_001"
+    },
+    {
+      "id": "contrib_2",
+      "title": "Institutional UI & Interactive Matrix Grid",
+      "category": "Frontend Development",
+      "contributorWallet": "4zMMC9srt5Ri5X14GAgXhaHii3GnPAEERYPJgZJDncDU",
+      "description": "Responsive trading dashboard, live GeckoTerminal candlestick chart integration, and visual matrix network tree.",
+      "proofUrl": "https://github.com/Aiqxfoundation/AIQXEarn/pull/1",
+      "requestedRewardAiqx": 2500,
+      "grantedRewardAiqx": 2500,
+      "status": "rewarded",
+      "submittedAt": "2026-10-20T14:30:00Z",
+      "reviewedAt": "2026-10-21T09:15:00Z",
+      "transactionSignature": "sig_genesis_frontend_grant_002"
+    },
+    {
+      "id": "contrib_3",
+      "title": "Comprehensive Security Audit & Reentrancy Analysis",
+      "category": "Security Research",
+      "contributorWallet": "9B5XszUGdMaxCZ7uSQhPzdks5ZQSmWxrmzCSkYd16G92",
+      "description": "Formal verification of SPL token transfer accounts, PDA authority validation, and crossover overflow resistance.",
+      "proofUrl": "https://solana.fm/address/2SSHcFVHfiCdxYUyBwBWzULaAjQbixujKZCSKwwT8n1o",
+      "requestedRewardAiqx": 3500,
+      "grantedRewardAiqx": 3500,
+      "status": "verified",
+      "submittedAt": "2026-10-28T08:00:00Z",
+      "reviewedAt": "2026-10-29T16:00:00Z"
+    }
+  ]
 }

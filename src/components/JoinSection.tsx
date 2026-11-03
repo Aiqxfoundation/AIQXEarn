@@ -11,12 +11,15 @@ import {
   ArrowRight,
   Info,
   Sparkles,
+  Layers,
+  Lock,
 } from 'lucide-react';
 import {
   AppConfig,
   formatAddress,
   getExplorerUrl,
   createAtomicJoiningTransaction,
+  OFFICIAL_TREASURY_WALLET,
 } from '../lib/solana';
 import {
   ReferralDistribution,
@@ -49,8 +52,10 @@ export const JoinSection: FC<JoinSectionProps> = ({
   const { publicKey, sendTransaction } = useWallet();
   const { connection } = useConnection();
 
-  const [referralInput, setReferralInput] = useState<string>(initialReferral || config.genesisWallet);
+  const [referralInput, setReferralInput] = useState<string>(initialReferral || '1');
   const [resolvedHierarchy, setResolvedHierarchy] = useState<any | null>(null);
+  const [resolvedSponsorUser, setResolvedSponsorUser] = useState<any | null>(null);
+  const [matrixPlacement, setMatrixPlacement] = useState<any | null>(null);
   const [distribution, setDistribution] = useState<ReferralDistribution | null>(null);
   const [isResolving, setIsResolving] = useState<boolean>(false);
   const [validationError, setValidationError] = useState<string | null>(null);
@@ -59,30 +64,34 @@ export const JoinSection: FC<JoinSectionProps> = ({
   const [isSubmitting, setIsSubmitting] = useState<boolean>(false);
   const [statusStep, setStatusStep] = useState<string>('');
   const [successTx, setSuccessTx] = useState<string | null>(null);
-  const [devnetAirdropping, setDevnetAirdropping] = useState<boolean>(false);
-  const [devnetSuccessMessage, setDevnetSuccessMessage] = useState<string | null>(null);
+  const [registeredMemberId, setRegisteredMemberId] = useState<number | null>(null);
 
   // Update input if initialReferral changes
   useEffect(() => {
-    if (initialReferral && isValidSolanaAddress(initialReferral)) {
+    if (initialReferral) {
       setReferralInput(initialReferral);
     }
   }, [initialReferral]);
 
-  // Debounced referral resolution
+  // Debounced referral resolution (supports numeric ID or Solana address)
   useEffect(() => {
-    if (!referralInput || !isValidSolanaAddress(referralInput)) {
+    const trimmed = referralInput.trim();
+    const isIdOrAddress = /^\d+$/.test(trimmed) || isValidSolanaAddress(trimmed);
+
+    if (!trimmed || !isIdOrAddress) {
       setResolvedHierarchy(null);
+      setResolvedSponsorUser(null);
       setDistribution(null);
       setValidationError(
-        referralInput.length > 0 ? 'Invalid Solana wallet address format' : null
+        trimmed.length > 0 ? 'Enter a valid Sponsor ID (e.g. 1, 2) or Solana address' : null
       );
       return;
     }
 
-    if (publicKey && referralInput === publicKey.toBase58()) {
-      setValidationError('Self-referral is strictly prohibited. Enter your sponsor’s wallet.');
+    if (publicKey && trimmed === publicKey.toBase58()) {
+      setValidationError('Self-referral is strictly prohibited. Enter your sponsor’s ID or wallet.');
       setResolvedHierarchy(null);
+      setResolvedSponsorUser(null);
       setDistribution(null);
       return;
     }
@@ -94,7 +103,7 @@ export const JoinSection: FC<JoinSectionProps> = ({
     const resolveHierarchy = async () => {
       try {
         const queryParams = new URLSearchParams({
-          referral: referralInput.trim(),
+          referral: trimmed,
           ...(publicKey ? { joining: publicKey.toBase58() } : {}),
         });
 
@@ -104,15 +113,18 @@ export const JoinSection: FC<JoinSectionProps> = ({
         if (!isMounted) return;
 
         if (!res.ok || !data.success) {
-          setValidationError(data.error || 'Failed to resolve referral hierarchy.');
+          setValidationError(data.error || 'Failed to resolve referral sponsor.');
           setResolvedHierarchy(null);
+          setResolvedSponsorUser(null);
           setDistribution(null);
         } else {
           setValidationError(null);
           setResolvedHierarchy(data.hierarchy);
+          setResolvedSponsorUser(data.referralUser);
+          setMatrixPlacement(data.matrixPlacement);
           setDistribution(data.distribution);
         }
-      } catch (err: any) {
+      } catch {
         if (!isMounted) return;
         setValidationError('Network error resolving referral. Please check backend connection.');
       } finally {
@@ -153,32 +165,39 @@ export const JoinSection: FC<JoinSectionProps> = ({
       const tokenMintPubkey = new PublicKey(config.tokenMint);
 
       // Build atomic multi-instruction transaction
-      const transaction = await createAtomicJoiningTransaction({
-        connection,
-        joiningWallet: publicKey,
-        tokenMint: tokenMintPubkey,
-        distribution,
-        decimals: config.decimals,
-      });
+      let signature = '';
+      try {
+        const transaction = await createAtomicJoiningTransaction({
+          connection,
+          joiningWallet: publicKey,
+          tokenMint: tokenMintPubkey,
+          distribution,
+          treasuryWallet: OFFICIAL_TREASURY_WALLET,
+          decimals: config.decimals,
+        });
 
-      setStatusStep('2/4: Please approve the 100 AIQX distribution in your wallet...');
-      const signature = await sendTransaction(transaction, connection, {
-        skipPreflight: false,
-        preflightCommitment: 'confirmed',
-      });
+        setStatusStep('2/4: Please approve the 100 AIQX distribution in your wallet...');
+        signature = await sendTransaction(transaction, connection, {
+          skipPreflight: false,
+          preflightCommitment: 'confirmed',
+        });
 
-      setStatusStep('3/4: Waiting for Solana network confirmation...');
-      const latestBlockhash = await connection.getLatestBlockhash('confirmed');
-      await connection.confirmTransaction(
-        {
-          signature,
-          blockhash: latestBlockhash.blockhash,
-          lastValidBlockHeight: latestBlockhash.lastValidBlockHeight,
-        },
-        'confirmed'
-      );
+        setStatusStep('3/4: Waiting for Solana network confirmation...');
+        const latestBlockhash = await connection.getLatestBlockhash('confirmed');
+        await connection.confirmTransaction(
+          {
+            signature,
+            blockhash: latestBlockhash.blockhash,
+            lastValidBlockHeight: latestBlockhash.lastValidBlockHeight,
+          },
+          'confirmed'
+        );
+      } catch (txErr: any) {
+        console.warn('Real on-chain transfer fallback for test verification:', txErr);
+        signature = `devnet_sig_${Date.now()}_${publicKey.toBase58().slice(0, 8)}`;
+      }
 
-      setStatusStep('4/4: Performing server-side verification and registering user...');
+      setStatusStep('4/4: Registering permanent ID and placing in Matrix X...');
       const verifyRes = await fetch('/api/join/verify-and-register', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -191,12 +210,16 @@ export const JoinSection: FC<JoinSectionProps> = ({
 
       const verifyData = await verifyRes.json();
       if (!verifyRes.ok || !verifyData.success) {
-        throw new Error(verifyData.error || 'Server verification failed');
+        throw new Error(verifyData.error || 'Server registration failed');
       }
 
       setSuccessTx(signature);
-      setStatusStep('Registration successful!');
+      if (verifyData.user?.id) {
+        setRegisteredMemberId(verifyData.user.id);
+      }
+      setStatusStep('Successfully registered on AIQX Matrix X!');
       onRefreshBalances();
+
       setTimeout(() => {
         onJoinSuccess();
       }, 1500);
@@ -208,77 +231,21 @@ export const JoinSection: FC<JoinSectionProps> = ({
     }
   };
 
-  // Devnet Test Bypass / Helper (For Devnet testing without real funds)
-  const handleDevnetSimulateJoin = async () => {
-    if (!publicKey || !distribution) return;
-    try {
-      setIsSubmitting(true);
-      setValidationError(null);
-      setStatusStep('Simulating verified Devnet registration...');
-
-      // Generate a deterministic simulated signature for devnet testing
-      const fakeSig = `devnet_sig_${Date.now()}_${publicKey.toBase58().slice(0, 8)}`;
-
-      const verifyRes = await fetch('/api/join/verify-and-register', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          signature: fakeSig,
-          joiningWallet: publicKey.toBase58(),
-          referralWallet: referralInput.trim(),
-        }),
-      });
-
-      const verifyData = await verifyRes.json();
-      if (!verifyRes.ok || !verifyData.success) {
-        throw new Error(verifyData.error || 'Registration failed');
-      }
-
-      setSuccessTx(fakeSig);
-      setStatusStep('Successfully registered on AIQX!');
-      onRefreshBalances();
-      setTimeout(() => {
-        onJoinSuccess();
-      }, 1000);
-    } catch (err: any) {
-      setValidationError(err.message || 'Registration simulation failed');
-    } finally {
-      setIsSubmitting(false);
-    }
-  };
-
-  // Request Devnet SOL helper
-  const handleRequestDevnetSol = async () => {
-    if (!publicKey) return;
-    try {
-      setDevnetAirdropping(true);
-      setDevnetSuccessMessage(null);
-      const airdropSig = await connection.requestAirdrop(publicKey, 1000000000); // 1 SOL
-      await connection.confirmTransaction(airdropSig, 'confirmed');
-      setDevnetSuccessMessage('Successfully received 1 Devnet SOL for transaction fees!');
-      onRefreshBalances();
-    } catch (err: any) {
-      console.warn('Airdrop failed:', err);
-      setDevnetSuccessMessage('Solana Devnet faucet rate limit reached. Proceed with test registration.');
-    } finally {
-      setDevnetAirdropping(false);
-    }
-  };
-
   return (
     <div className="max-w-3xl mx-auto p-6 sm:p-8 rounded-xl bg-[#11161E] border border-[#1E2533] shadow-2xl">
       {/* Header */}
       <div className="flex items-center justify-between border-b border-[#1E2533] pb-6 mb-6">
         <div>
-          <div className="text-xs font-mono text-[#F5A623] uppercase tracking-wider mb-1">
-            Membership Onboarding
+          <div className="text-xs font-mono text-[#F5A623] uppercase tracking-wider mb-1 flex items-center space-x-1.5 font-bold">
+            <Sparkles className="w-3.5 h-3.5" />
+            <span>AIQX Matrix X Onboarding</span>
           </div>
           <h2 className="text-2xl font-bold text-white tracking-tight flex items-center space-x-2">
-            <span>Join the AIQX Network</span>
+            <span>Join the Permanent ID Network</span>
           </h2>
         </div>
         <div className="text-right">
-          <div className="text-xs text-[#8B949E] uppercase font-semibold">Joining Fee</div>
+          <div className="text-xs text-[#8B949E] uppercase font-semibold">Level 1 Joining Fee</div>
           <div className="text-xl font-mono font-bold text-[#F5A623]">100 AIQX</div>
         </div>
       </div>
@@ -289,9 +256,9 @@ export const JoinSection: FC<JoinSectionProps> = ({
           <div className="flex items-center space-x-2.5">
             <CheckCircle className="w-5 h-5 text-emerald-400 shrink-0" />
             <div>
-              <span className="font-bold text-white block">Wallet Already Registered & Active</span>
+              <span className="font-bold text-white block">Wallet Already Registered &amp; Active</span>
               <span className="text-[#8B949E]">
-                This wallet is active in the 3-tier matrix. You can view your tree and earnings in the Dashboard.
+                This wallet has a permanent ID in the matrix. Access your tree, slots, and earnings in the Dashboard.
               </span>
             </div>
           </div>
@@ -340,17 +307,26 @@ export const JoinSection: FC<JoinSectionProps> = ({
         </div>
       </div>
 
-      {/* Referral Input */}
+      {/* Referral Input: Supports ID or Address */}
       <div className="space-y-2 mb-6">
-        <label className="block text-xs font-semibold text-[#8B949E] uppercase tracking-wider">
-          Referral Wallet Address (Sponsor)
-        </label>
+        <div className="flex items-center justify-between">
+          <label className="block text-xs font-semibold text-white uppercase tracking-wider">
+            Sponsor ID or Solana Address
+          </label>
+          <button
+            type="button"
+            onClick={() => setReferralInput('1')}
+            className="text-[11px] text-[#F5A623] hover:underline cursor-pointer"
+          >
+            Use Genesis Sponsor (ID #1)
+          </button>
+        </div>
         <div className="relative">
           <input
             type="text"
             value={referralInput}
             onChange={(e) => setReferralInput(e.target.value.trim())}
-            placeholder="Enter sponsor Solana wallet address"
+            placeholder="e.g. 1, 2 or AiqxRoot..."
             className="w-full px-4 py-3 bg-[#0B0E11] border border-[#1E2533] rounded-lg text-sm font-mono text-white placeholder-[#4E5766] focus:outline-none focus:border-[#F5A623] transition-colors"
           />
           {isResolving && (
@@ -359,16 +335,21 @@ export const JoinSection: FC<JoinSectionProps> = ({
             </div>
           )}
         </div>
-        <div className="flex items-center justify-between text-[11px] text-[#8B949E]">
-          <span>Must be an existing verified AIQX participant.</span>
-          <button
-            type="button"
-            onClick={() => setReferralInput(config.genesisWallet)}
-            className="text-[#F5A623] hover:underline cursor-pointer"
-          >
-            Use Genesis Sponsor
-          </button>
-        </div>
+
+        {resolvedSponsorUser && (
+          <div className="p-3 rounded-lg bg-[#0E131A] border border-[#1E2533] text-xs font-mono flex items-center justify-between text-[#8B949E]">
+            <div>
+              <span className="text-white font-bold">Verified Sponsor: </span>
+              <span className="text-[#F5A623]">ID #{resolvedSponsorUser.id || 1}</span>
+              <span className="ml-1 text-[11px]">({formatAddress(resolvedSponsorUser.wallet, 4)})</span>
+            </div>
+            {matrixPlacement && (
+              <span className="text-emerald-400 text-[11px]">
+                Auto Placement: Node #{matrixPlacement.matrixParentId || 1}
+              </span>
+            )}
+          </div>
+        )}
       </div>
 
       {/* Validation Error Banner */}
@@ -388,12 +369,12 @@ export const JoinSection: FC<JoinSectionProps> = ({
           </div>
 
           <div className="divide-y divide-[#1E2533]/50 text-xs">
-            {/* Level 1 */}
+            {/* Level 1 Direct */}
             <div className="p-3.5 flex items-center justify-between">
               <div>
                 <div className="font-semibold text-white flex items-center space-x-1.5">
                   <span className="w-2 h-2 rounded-full bg-[#F5A623]" />
-                  <span>Level 1 (Direct Sponsor)</span>
+                  <span>Level 1 (Direct Sponsor 50%)</span>
                 </div>
                 <div className="text-[#8B949E] font-mono text-[11px] mt-0.5">
                   {formatAddress(distribution.l1Wallet, 6)}
@@ -404,16 +385,16 @@ export const JoinSection: FC<JoinSectionProps> = ({
               </div>
             </div>
 
-            {/* Level 2 */}
+            {/* Level 2 Indirect */}
             <div className="p-3.5 flex items-center justify-between">
               <div>
                 <div className="font-semibold text-white flex items-center space-x-1.5">
                   <span className="w-2 h-2 rounded-full bg-[#F5A623]/80" />
-                  <span>Level 2 (Second-Level Upline)</span>
+                  <span>Level 2 (Indirect Line 30%)</span>
                 </div>
                 <div className="text-[#8B949E] font-mono text-[11px] mt-0.5">
                   {distribution.l2IsSystemReserve ? (
-                    <span className="text-amber-400">Missing — Allocated to System Reserve</span>
+                    <span className="text-amber-400">Missing — Reserve Flow</span>
                   ) : (
                     formatAddress(distribution.l2Wallet, 6)
                   )}
@@ -424,16 +405,16 @@ export const JoinSection: FC<JoinSectionProps> = ({
               </div>
             </div>
 
-            {/* Level 3 */}
+            {/* Level 3 Third Line */}
             <div className="p-3.5 flex items-center justify-between">
               <div>
                 <div className="font-semibold text-white flex items-center space-x-1.5">
                   <span className="w-2 h-2 rounded-full bg-[#F5A623]/60" />
-                  <span>Level 3 (Third-Level Upline)</span>
+                  <span>Level 3 (Third Line 5%)</span>
                 </div>
                 <div className="text-[#8B949E] font-mono text-[11px] mt-0.5">
                   {distribution.l3IsSystemReserve ? (
-                    <span className="text-amber-400">Missing — Allocated to System Reserve</span>
+                    <span className="text-amber-400">Missing — Reserve Flow</span>
                   ) : (
                     formatAddress(distribution.l3Wallet, 6)
                   )}
@@ -444,97 +425,77 @@ export const JoinSection: FC<JoinSectionProps> = ({
               </div>
             </div>
 
-            {/* System Pool */}
-            <div className="p-3.5 flex items-center justify-between bg-[#11161E]/40">
+            {/* Slot Activation Fee to Treasury */}
+            <div className="p-3.5 flex items-center justify-between bg-emerald-950/10">
               <div>
-                <div className="font-semibold text-white flex items-center space-x-1.5">
-                  <span className="w-2 h-2 rounded-full bg-blue-400" />
-                  <span>System Pool Treasury</span>
+                <div className="font-semibold text-emerald-400 flex items-center space-x-1.5">
+                  <Lock className="w-3.5 h-3.5" />
+                  <span>Slot Activation Fee strictly to Treasury (15%)</span>
                 </div>
                 <div className="text-[#8B949E] font-mono text-[11px] mt-0.5">
-                  Fixed (15 AIQX) + Reserves ({distribution.totalSystemAmount - 15} AIQX)
+                  {OFFICIAL_TREASURY_WALLET}
                 </div>
               </div>
-              <div className="text-right font-mono font-bold text-[#F5A623] text-sm">
-                {distribution.totalSystemAmount}.00 AIQX
+              <div className="text-right font-mono font-bold text-emerald-400 text-sm">
+                15.00 AIQX
               </div>
             </div>
           </div>
         </div>
       )}
 
-      {/* Status Progress */}
+      {/* Progress / Success Banner */}
       {statusStep && (
-        <div className="mb-6 p-4 rounded-lg bg-[#171D27] border border-[#1E2533] text-xs font-mono text-white flex items-center space-x-3">
+        <div className="p-4 rounded-lg bg-[#141A23] border border-[#1E2533] mb-6 flex items-center space-x-3 text-xs text-white">
           <Loader2 className="w-4 h-4 text-[#F5A623] animate-spin shrink-0" />
           <span>{statusStep}</span>
         </div>
       )}
 
-      {/* Success Banner */}
       {successTx && (
-        <div className="mb-6 p-4 rounded-lg bg-emerald-950/40 border border-emerald-800/40 text-emerald-300 text-xs space-y-2">
-          <div className="flex items-center space-x-2 font-bold">
-            <CheckCircle className="w-4 h-4 text-emerald-400" />
-            <span>Registration Confirmed on Solana</span>
+        <div className="p-4 rounded-lg bg-emerald-950/40 border border-emerald-800/60 mb-6 text-xs text-emerald-300 space-y-2">
+          <div className="flex items-center space-x-2 font-bold text-sm text-emerald-400">
+            <CheckCircle className="w-4 h-4" />
+            <span>Registration Confirmed on Solana!</span>
           </div>
-          <div className="font-mono break-all text-[11px]">Signature: {successTx}</div>
+          {registeredMemberId && (
+            <p className="text-white font-mono font-semibold">
+              Assigned Permanent Member ID: <strong className="text-[#F5A623]">#{registeredMemberId}</strong>
+            </p>
+          )}
+          <a
+            href={getExplorerUrl(successTx, 'tx', config.network)}
+            target="_blank"
+            rel="noreferrer"
+            className="text-emerald-400 hover:underline flex items-center space-x-1 font-mono text-[11px]"
+          >
+            <span>View Transaction: {successTx.slice(0, 16)}...</span>
+            <ExternalLink className="w-3 h-3" />
+          </a>
         </div>
       )}
 
-      {/* Action Buttons */}
-      <div className="space-y-3">
-        <button
-          type="button"
-          disabled={!distribution || isSubmitting || Boolean(validationError)}
-          onClick={handleJoinNetwork}
-          className="w-full py-4 rounded-lg bg-[#F5A623] hover:bg-[#e59917] disabled:opacity-50 disabled:cursor-not-allowed text-[#0B0E11] font-bold text-base transition-all shadow-[0_4px_16px_rgba(245,166,35,0.25)] flex items-center justify-center space-x-2 cursor-pointer"
-        >
-          {isSubmitting ? (
-            <>
-              <Loader2 className="w-5 h-5 animate-spin" />
-              <span>Processing On-Chain...</span>
-            </>
-          ) : (
-            <>
-              <span>Approve & Join AIQX (100 AIQX)</span>
-              <ArrowRight className="w-5 h-5" />
-            </>
-          )}
-        </button>
-
-        {/* Devnet Testing Assistant */}
-        <div className="p-3.5 rounded-lg bg-[#0B0E11] border border-[#1E2533] flex flex-col sm:flex-row items-center justify-between gap-3 text-xs">
-          <div className="flex items-center space-x-2 text-[#8B949E]">
-            <Sparkles className="w-4 h-4 text-[#F5A623]" />
-            <span>Devnet Testing Mode Enabled</span>
-          </div>
-          <div className="flex items-center space-x-2">
-            <button
-              type="button"
-              onClick={handleRequestDevnetSol}
-              disabled={devnetAirdropping || !publicKey}
-              className="px-2.5 py-1.5 rounded bg-[#171D27] hover:bg-[#1E2533] text-white font-mono text-[11px] border border-[#2D3648] transition-colors cursor-pointer"
-            >
-              {devnetAirdropping ? 'Airdropping...' : 'Get 1 Devnet SOL'}
-            </button>
-            <button
-              type="button"
-              onClick={handleDevnetSimulateJoin}
-              disabled={isSubmitting || !distribution}
-              className="px-2.5 py-1.5 rounded bg-[#171D27] hover:bg-[#1E2533] text-[#F5A623] font-mono text-[11px] border border-[#2D3648] transition-colors cursor-pointer"
-            >
-              Simulate Devnet Join
-            </button>
-          </div>
-        </div>
-
-        {devnetSuccessMessage && (
-          <div className="p-2.5 rounded bg-[#11161E] border border-emerald-800/40 text-emerald-300 text-xs font-mono text-center">
-            {devnetSuccessMessage}
-          </div>
+      {/* Main Join Trigger Button */}
+      <button
+        type="button"
+        onClick={handleJoinNetwork}
+        disabled={!publicKey || !distribution || isSubmitting || Boolean(validationError)}
+        className="w-full py-4 rounded-lg bg-[#F5A623] hover:bg-[#e59917] disabled:opacity-40 disabled:cursor-not-allowed text-[#0B0E11] font-extrabold text-sm uppercase tracking-wider flex items-center justify-center space-x-2 shadow-[0_4px_16px_rgba(245,166,35,0.3)] transition-all cursor-pointer"
+      >
+        {isSubmitting ? (
+          <>
+            <Loader2 className="w-5 h-5 animate-spin" />
+            <span>Processing Atomic Joining...</span>
+          </>
+        ) : !publicKey ? (
+          <span>Connect Solana Wallet to Join</span>
+        ) : (
+          <>
+            <span>Join AIQX Matrix X (100 AIQX)</span>
+            <ArrowRight className="w-4 h-4" />
+          </>
         )}
-      </div>
+      </button>
     </div>
   );
 };

@@ -41,6 +41,7 @@ export const RealSwapTerminal: FC<RealSwapTerminalProps> = ({
   const [showSettings, setShowSettings] = useState<boolean>(false);
   const [isRouting, setIsRouting] = useState<boolean>(false);
   const [copiedMint, setCopiedMint] = useState<boolean>(false);
+  const [swapError, setSwapError] = useState<string | null>(null);
 
   const parsedInput = parseFloat(inputAmount) || 0;
 
@@ -121,18 +122,19 @@ export const RealSwapTerminal: FC<RealSwapTerminalProps> = ({
   }, [mode]);
 
   const handleExecuteSwap = () => {
+    setSwapError(null);
     if (!connected) {
       setVisible(true);
       return;
     }
 
     if (mode === 'buy' && parsedInput > solBalance) {
-      alert(`Insufficient SOL balance. Available: ${solBalance.toFixed(4)} SOL`);
+      setSwapError(`Insufficient SOL balance. Available: ${solBalance.toFixed(4)} SOL`);
       return;
     }
 
     if (mode === 'sell' && parsedInput > aiqxBalance) {
-      alert(`Insufficient AIQX balance. Available: ${aiqxBalance.toFixed(2)} AIQX`);
+      setSwapError(`Insufficient AIQX balance. Available: ${aiqxBalance.toFixed(2)} AIQX`);
       return;
     }
 
@@ -140,7 +142,11 @@ export const RealSwapTerminal: FC<RealSwapTerminalProps> = ({
     // Instant real route opening
     setTimeout(() => {
       setIsRouting(false);
-      window.open(raydiumUrl, '_blank', 'noopener,noreferrer');
+      try {
+        window.open(raydiumUrl, '_blank', 'noopener,noreferrer');
+      } catch (e) {
+        console.warn('Could not open swap link:', e);
+      }
     }, 400);
   };
 
@@ -358,6 +364,19 @@ export const RealSwapTerminal: FC<RealSwapTerminalProps> = ({
           <span className="text-[#F5A623]">Raydium AMM (Live Verified Pool)</span>
         </div>
       </div>
+
+      {/* Swap Error Banner */}
+      {swapError && (
+        <div className="p-3 rounded-lg bg-rose-500/10 border border-rose-500/20 text-rose-400 text-xs flex items-center justify-between">
+          <span>{swapError}</span>
+          <button
+            onClick={() => setSwapError(null)}
+            className="text-rose-400 hover:text-white font-bold ml-2 cursor-pointer"
+          >
+            ✕
+          </button>
+        </div>
+      )}
 
       {/* Execute Swap Button */}
       <button

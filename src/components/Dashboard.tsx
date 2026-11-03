@@ -61,9 +61,10 @@ export const Dashboard: FC<DashboardProps> = ({
   const [copiedWallet, setCopiedWallet] = useState(false);
   const [activeTreeTab, setActiveTreeTab] = useState<'l1' | 'l2' | 'l3'>('l1');
 
+  const refParam = user.id ? String(user.id) : user.wallet;
   const referralUrl = typeof window !== 'undefined'
-    ? `${window.location.origin}/?ref=${user.wallet}`
-    : `https://aiqx.io/?ref=${user.wallet}`;
+    ? `${window.location.origin}/?ref=${refParam}`
+    : `https://aiqx.io/?ref=${refParam}`;
 
   const copyToClipboard = async (text: string, type: 'link' | 'wallet') => {
     try {
@@ -113,11 +114,16 @@ export const Dashboard: FC<DashboardProps> = ({
         <div className="p-6 rounded-xl bg-[#11161E] border border-[#1E2533] flex flex-col justify-between">
           <div>
             <div className="flex items-center justify-between mb-4 pb-3 border-b border-[#1E2533]">
-              <span className="text-xs font-mono uppercase tracking-wider text-[#F5A623] font-semibold">
-                My Account
-              </span>
+              <div className="flex items-center space-x-2">
+                <span className="text-xs font-mono uppercase tracking-wider text-[#F5A623] font-semibold">
+                  My Account
+                </span>
+                <span className="px-2 py-0.5 rounded bg-[#171D27] text-white font-mono font-bold text-[10px] border border-[#232B3B]">
+                  ID #{user.id || 1}
+                </span>
+              </div>
               <span className="text-[11px] px-2 py-0.5 rounded bg-emerald-950/60 text-emerald-400 border border-emerald-800/40 font-mono">
-                Active Member
+                Level {Math.max(...(user.activeLevels || [1]))} Active
               </span>
             </div>
 

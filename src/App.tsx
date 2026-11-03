@@ -3,13 +3,26 @@ import { useWallet, useConnection } from '@solana/wallet-adapter-react';
 import { WalletMultiButton } from '@solana/wallet-adapter-react-ui';
 import { WalletProvider, useWalletNotice } from './context/WalletProvider';
 import { Header, NavigationTab } from './components/Header';
+import { ForsageSidebar } from './components/ForsageSidebar';
+import { ForsageDashboard } from './components/ForsageDashboard';
+import { DocsSection } from './components/DocsSection';
 import { RealCandlestickChart } from './components/RealCandlestickChart';
 import { RealSwapTerminal } from './components/RealSwapTerminal';
 import { JoinSection } from './components/JoinSection';
-import { Dashboard } from './components/Dashboard';
 import { SystemPoolSection } from './components/SystemPoolSection';
 import { SolanaLogo } from './components/SolanaLogo';
 import { TokenGuideModal } from './components/TokenGuideModal';
+
+// AIQX Foundation Matrix Program Components
+import { FoundationOverview } from './components/matrix/FoundationOverview';
+import { MatrixXSection } from './components/matrix/MatrixXSection';
+import { MyNetworkSection } from './components/matrix/MyNetworkSection';
+import { MySlotsSection } from './components/matrix/MySlotsSection';
+import { CrossoverSection } from './components/matrix/CrossoverSection';
+import { EarningsSection } from './components/matrix/EarningsSection';
+import { ContributeSection } from './components/matrix/ContributeSection';
+import { TransactionsSection } from './components/matrix/TransactionsSection';
+
 import {
   DEFAULT_CONFIG,
   AppConfig,
@@ -31,6 +44,7 @@ import {
   TrendingUp,
   Activity,
   Zap,
+  Sparkles,
 } from 'lucide-react';
 
 function AppContent() {
@@ -39,7 +53,7 @@ function AppContent() {
   const { notice, clearNotice } = useWalletNotice();
 
   const [config, setConfig] = useState<AppConfig>(DEFAULT_CONFIG);
-  const [activeTab, setActiveTab] = useState<NavigationTab>('terminal');
+  const [activeTab, setActiveTab] = useState<NavigationTab>('dashboard');
   const [isTokenGuideOpen, setIsTokenGuideOpen] = useState<boolean>(false);
 
   // Live GeckoTerminal Pool Metrics
@@ -54,19 +68,23 @@ function AppContent() {
     systemPool: SystemPoolBreakdown;
   } | null>(null);
 
-  // User State
+  // Connected User State
   const [isRegistered, setIsRegistered] = useState<boolean>(false);
   const [userData, setUserData] = useState<UserRecord | null>(null);
   const [earningsData, setEarningsData] = useState<{
     l1Earnings: number;
     l2Earnings: number;
     l3Earnings: number;
+    crossoverEarnings?: number;
+    contributionEarnings?: number;
     totalEarnings: number;
     history: EarningsRecord[];
   }>({
     l1Earnings: 0,
     l2Earnings: 0,
     l3Earnings: 0,
+    crossoverEarnings: 0,
+    contributionEarnings: 0,
     totalEarnings: 0,
     history: [],
   });
@@ -88,10 +106,18 @@ function AppContent() {
     tree: { l1: [], l2: [], l3: [] },
   });
 
+  // Forsage Preview ID State
+  const [previewIdInput, setPreviewIdInput] = useState<string>('1');
+  const [isPreviewMode, setIsPreviewMode] = useState<boolean>(false);
+  const [previewUserData, setPreviewUserData] = useState<UserRecord | null>(null);
+  const [previewEarningsData, setPreviewEarningsData] = useState<any>(null);
+  const [previewReferralsData, setPreviewReferralsData] = useState<any>(null);
+
   const [aiqxBalance, setAiqxBalance] = useState<number>(0);
   const [solBalance, setSolBalance] = useState<number>(0);
   const [isLoadingUser, setIsLoadingUser] = useState<boolean>(false);
   const [referralParam, setReferralParam] = useState<string>('');
+  const [copiedHeroRef, setCopiedHeroRef] = useState<boolean>(false);
 
   // Extract ?ref= from URL
   useEffect(() => {
@@ -143,14 +169,44 @@ function AppContent() {
     }
   }, []);
 
+  // Load Preview Data for a given ID or wallet
+  const loadPreviewMember = useCallback(async (idOrWallet: string | number) => {
+    try {
+      const res = await fetch(`/api/user/${idOrWallet}`);
+      const data = await res.json();
+      if (data && data.success && data.user) {
+        setPreviewUserData(data.user);
+        if (data.earnings) setPreviewEarningsData(data.earnings);
+        if (data.referrals) setPreviewReferralsData(data.referrals);
+        setIsPreviewMode(true);
+        setActiveTab('dashboard');
+      } else {
+        // If not found, try fallback to ID 1
+        const fallbackRes = await fetch(`/api/user/1`);
+        const fallbackData = await fallbackRes.json();
+        if (fallbackData && fallbackData.success && fallbackData.user) {
+          setPreviewUserData(fallbackData.user);
+          if (fallbackData.earnings) setPreviewEarningsData(fallbackData.earnings);
+          if (fallbackData.referrals) setPreviewReferralsData(fallbackData.referrals);
+          setIsPreviewMode(true);
+          setActiveTab('dashboard');
+        }
+      }
+    } catch (e) {
+      console.warn('Failed to load preview user:', e);
+    }
+  }, []);
+
+  // Default seed preview of ID 1 on load
   useEffect(() => {
     loadPlatformData();
     loadPoolMetrics();
+    loadPreviewMember('1');
     const interval = setInterval(loadPoolMetrics, 30000);
     return () => clearInterval(interval);
-  }, [loadPlatformData, loadPoolMetrics]);
+  }, [loadPlatformData, loadPoolMetrics, loadPreviewMember]);
 
-  // Fetch Balances & User Status
+  // Fetch Balances & User Status for connected wallet
   const loadUserData = useCallback(async () => {
     if (!publicKey) {
       setIsRegistered(false);
@@ -179,6 +235,8 @@ function AppContent() {
         setUserData(data.user);
         if (data.earnings) setEarningsData(data.earnings);
         if (data.referrals) setReferralsData(data.referrals);
+        // If wallet is connected, exit preview by default unless requested
+        setIsPreviewMode(false);
       } else {
         setIsRegistered(false);
         setUserData(null);
@@ -196,20 +254,50 @@ function AppContent() {
     }
   }, [connected, publicKey, loadUserData]);
 
+  // Handle preview search submission
+  const handlePreviewSubmit = (idOrWallet: string) => {
+    loadPreviewMember(idOrWallet);
+  };
+
+  const handleClearPreview = () => {
+    setIsPreviewMode(false);
+    if (userData) {
+      setPreviewUserData(null);
+    } else {
+      // If no wallet connected, preview root ID 1
+      loadPreviewMember('1');
+    }
+  };
+
+  // Determine active display user (either preview or connected user)
+  const displayUser = isPreviewMode ? previewUserData : (userData || previewUserData);
+  const displayEarnings = isPreviewMode
+    ? (previewEarningsData || earningsData)
+    : (userData ? earningsData : (previewEarningsData || earningsData));
+  const displayReferrals = isPreviewMode
+    ? (previewReferralsData || referralsData)
+    : (userData ? referralsData : (previewReferralsData || referralsData));
+
   return (
-    <div className="min-h-screen flex flex-col bg-[#0B0E11] text-[#E6EDF3]">
-      {/* Header with live price, real Solana logo, and hamburger menu */}
+    <div className="min-h-screen flex flex-col bg-[#0B0E14] text-[#E6EDF3]">
+      {/* Forsage-style Top Banner */}
       <Header
         config={config}
         activeTab={activeTab}
         setActiveTab={setActiveTab}
         isRegistered={isRegistered}
         userWallet={userData?.wallet}
+        userId={userData?.id}
         baseTokenPriceUsd={poolMetrics.baseTokenPriceUsd}
         onOpenTokenGuide={() => setIsTokenGuideOpen(true)}
+        previewIdInput={previewIdInput}
+        setPreviewIdInput={setPreviewIdInput}
+        onPreviewSubmit={handlePreviewSubmit}
+        isPreviewMode={isPreviewMode}
+        onClearPreview={handleClearPreview}
       />
 
-      {/* Global Wallet Notice Banner if needed */}
+      {/* Global Notice Banner if needed */}
       {notice && (
         <div className="bg-[#171D27] border-b border-[#F5A623]/30 px-4 py-2.5 text-xs text-[#E6EDF3] flex items-center justify-between">
           <div className="flex items-center space-x-2 max-w-4xl">
@@ -225,194 +313,216 @@ function AppContent() {
         </div>
       )}
 
-      {/* Main Viewport Content */}
-      <main className="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-5">
-        {/* TAB 1: TRADING TERMINAL (COMPACT DUAL COLUMN) */}
-        {activeTab === 'terminal' && (
-          <div className="space-y-5">
-            {/* 2-Column High-Density Trading Desk */}
-            <div className="grid grid-cols-1 lg:grid-cols-12 gap-5">
-              {/* Left Column: Real Candlestick Chart (7 cols) */}
-              <div className="lg:col-span-7 space-y-4">
-                <RealCandlestickChart
-                  poolMetrics={poolMetrics}
-                  onRefreshPool={loadPoolMetrics}
-                />
-              </div>
+      {/* Main Viewport Container with Left Sidebar */}
+      <div className="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-5 flex gap-6">
+        {/* Left Sidebar (Desktop) */}
+        <ForsageSidebar
+          activeTab={activeTab}
+          setActiveTab={setActiveTab}
+          onOpenTokenGuide={() => setIsTokenGuideOpen(true)}
+          isRegistered={isRegistered}
+        />
 
-              {/* Right Column: Real Swap Terminal & Referral Quick-Card (5 cols) */}
-              <div className="lg:col-span-5 space-y-4">
-                <RealSwapTerminal
-                  poolMetrics={poolMetrics}
-                  solBalance={solBalance}
-                  aiqxBalance={aiqxBalance}
-                  onRefreshBalances={loadUserData}
-                />
-
-                {/* Compact Community Referral Card */}
-                <div className="p-4 rounded-xl bg-[#11161E] border border-[#1E2533] space-y-3">
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center space-x-2">
-                      <Users className="w-4 h-4 text-[#F5A623]" />
-                      <h3 className="text-xs font-bold text-white uppercase tracking-wider">
-                        Community Referral Program
-                      </h3>
-                    </div>
-                    <button
-                      onClick={() => setActiveTab('referrals')}
-                      className="text-[11px] font-mono text-[#F5A623] hover:underline cursor-pointer"
-                    >
-                      {isRegistered ? 'View Tree →' : 'Join Network →'}
-                    </button>
-                  </div>
-
-                  <p className="text-[11px] text-[#8B949E] leading-relaxed">
-                    Earn AIQX by growing the Solana community. Atomic distribution:
-                    <strong className="text-white"> Level 1 (50%)</strong>,
-                    <strong className="text-white"> Level 2 (30%)</strong>,
-                    <strong className="text-white"> Level 3 (5%)</strong>,
-                    <strong className="text-[#F5A623]"> System Pool (15%)</strong>.
-                  </p>
-
-                  {isRegistered && userData ? (
-                    <div className="p-2.5 rounded-lg bg-[#0B0E11] border border-[#1E2533] flex items-center justify-between text-xs font-mono">
-                      <span className="text-emerald-400">Status: Registered</span>
-                      <button
-                        onClick={() => {
-                          const url = `${window.location.origin}?ref=${userData.wallet}`;
-                          navigator.clipboard.writeText(url);
-                          alert('Referral link copied to clipboard!');
-                        }}
-                        className="px-2 py-1 rounded bg-[#171D27] hover:bg-[#232B3B] text-[#F5A623] text-[11px] cursor-pointer"
-                      >
-                        Copy My Ref Link
-                      </button>
-                    </div>
-                  ) : (
-                    <button
-                      onClick={() => setActiveTab('referrals')}
-                      className="w-full py-2 rounded-lg bg-[#171D27] hover:bg-[#1E2533] text-white border border-[#232B3B] text-xs font-semibold transition-colors cursor-pointer"
-                    >
-                      Activate Membership (100 AIQX)
-                    </button>
-                  )}
-                </div>
-              </div>
-            </div>
-          </div>
-        )}
-
-        {/* TAB 2: REFERRALS / JOIN SECTION */}
-        {activeTab === 'referrals' && (
-          <div className="space-y-6 max-w-4xl mx-auto py-2">
-            <div className="text-center space-y-1">
-              <h2 className="text-xl font-bold text-white">AIQX 3-Level Referral System</h2>
-              <p className="text-xs text-[#8B949E]">
-                Automated on-chain marketing rewards. 100 AIQX activation distributed atomically.
-              </p>
-            </div>
-
-            <JoinSection
+        {/* Center / Right Operational Viewport */}
+        <main className="flex-1 min-w-0">
+          {/* TAB 1: FORSAGE DASHBOARD */}
+          {activeTab === 'dashboard' && displayUser && (
+            <ForsageDashboard
               config={config}
-              initialReferral={referralParam || config.genesisWallet}
+              user={displayUser}
+              earnings={displayEarnings}
+              referrals={displayReferrals}
               aiqxBalance={aiqxBalance}
               solBalance={solBalance}
-              isRegistered={isRegistered}
-              onJoinSuccess={() => {
+              isPreviewMode={isPreviewMode}
+              onExitPreview={handleClearPreview}
+              onPreviewMemberId={(id) => {
+                setPreviewIdInput(String(id));
+                loadPreviewMember(String(id));
+              }}
+              onNavigateToMatrix={() => setActiveTab('matrix-x')}
+              onNavigateToPartners={() => setActiveTab('my-network')}
+              onNavigateToDocs={() => setActiveTab('docs')}
+              onNavigateToContribute={() => setActiveTab('contribute')}
+              onNavigateToJoin={() => setActiveTab('referrals')}
+              onInspectSlotLevel={(lvl) => {
+                setActiveTab('matrix-x');
+              }}
+            />
+          )}
+
+          {/* TAB 2: MATRIX X (14-LEVEL FORSAGE SLOTS) */}
+          {activeTab === 'matrix-x' && (
+            <MatrixXSection
+              config={config}
+              userActiveLevels={displayUser?.activeLevels || [1]}
+              aiqxBalance={aiqxBalance}
+              userWallet={displayUser?.wallet}
+              onUpgradeSuccess={() => {
                 loadUserData();
                 loadPlatformData();
-                setActiveTab('dashboard');
               }}
-              onRefreshBalances={loadUserData}
-              onGoToDex={() => setActiveTab('terminal')}
-              onGoToDashboard={() => setActiveTab('dashboard')}
+              onNavigateToJoin={() => setActiveTab('referrals')}
             />
-          </div>
-        )}
+          )}
 
-        {/* TAB 3: SYSTEM POOL */}
-        {activeTab === 'system-pool' && (
-          <div className="max-w-4xl mx-auto py-2">
-            <SystemPoolSection
-              config={config}
-              poolData={stats?.systemPool || null}
-            />
-          </div>
-        )}
-
-        {/* TAB 4: DASHBOARD */}
-        {activeTab === 'dashboard' && (
-          <div className="max-w-6xl mx-auto py-2">
-            {!connected ? (
-              <div className="max-w-md mx-auto p-8 rounded-xl bg-[#11161E] border border-[#1E2533] text-center space-y-4 shadow-xl">
-                <div className="w-12 h-12 mx-auto rounded-full bg-[#171D27] border border-[#232B3B] flex items-center justify-center text-[#F5A623]">
-                  <Activity className="w-6 h-6" />
+          {/* TAB 3: TRADING TERMINAL & SWAP */}
+          {activeTab === 'terminal' && (
+            <div className="space-y-5">
+              <div className="grid grid-cols-1 lg:grid-cols-12 gap-5">
+                <div className="lg:col-span-7 space-y-4">
+                  <RealCandlestickChart
+                    poolMetrics={poolMetrics}
+                    onRefreshPool={loadPoolMetrics}
+                  />
                 </div>
-                <h3 className="text-lg font-bold text-white">Connect Solana Wallet</h3>
-                <p className="text-xs text-[#8B949E] leading-relaxed">
-                  Connect your Phantom or Solana wallet to inspect your referrals, earnings history, and real-time network tree.
-                </p>
-                <div className="flex justify-center pt-2">
-                  <WalletMultiButton className="!bg-[#F5A623] !text-[#0B0E11] !font-bold hover:!bg-[#e59917] !h-10 !px-5 !rounded-lg !text-xs !shadow-[0_4px_14px_rgba(245,166,35,0.25)]" />
+                <div className="lg:col-span-5 space-y-4">
+                  <RealSwapTerminal
+                    poolMetrics={poolMetrics}
+                    solBalance={solBalance}
+                    aiqxBalance={aiqxBalance}
+                    onRefreshBalances={loadUserData}
+                  />
                 </div>
               </div>
-            ) : isRegistered && userData ? (
-              <Dashboard
+            </div>
+          )}
+
+          {/* TAB 4: PARTNERS & NETWORK TREE */}
+          {activeTab === 'my-network' && (
+            <MyNetworkSection
+              config={config}
+              user={displayUser}
+              referrals={displayReferrals}
+              onNavigateToReferrals={() => setActiveTab('referrals')}
+            />
+          )}
+
+          {/* TAB 5: MY SLOTS */}
+          {activeTab === 'my-slots' && (
+            <MySlotsSection
+              config={config}
+              user={displayUser}
+              aiqxBalance={aiqxBalance}
+              onNavigateToMatrix={() => setActiveTab('matrix-x')}
+            />
+          )}
+
+          {/* TAB 6: DEDICATED INFORMATION & DOCS */}
+          {(activeTab === 'docs' || activeTab === 'foundation') && (
+            <DocsSection
+              config={config}
+              onNavigateToMatrix={() => setActiveTab('matrix-x')}
+              onNavigateToJoin={() => setActiveTab('referrals')}
+              onNavigateToContribute={() => setActiveTab('contribute')}
+            />
+          )}
+
+          {/* TAB 7: STATS & TRANSACTIONS */}
+          {activeTab === 'transactions' && (
+            <TransactionsSection
+              config={config}
+              earningsHistory={displayEarnings.history}
+              userWallet={displayUser?.wallet}
+            />
+          )}
+
+          {/* TAB 8: CONTRIBUTE TO EARN */}
+          {activeTab === 'contribute' && (
+            <ContributeSection
+              config={config}
+              user={displayUser}
+            />
+          )}
+
+          {/* TAB 9: PROTOCOL SYSTEM POOL */}
+          {activeTab === 'system-pool' && (
+            <div className="max-w-4xl mx-auto py-2">
+              <SystemPoolSection
                 config={config}
-                user={userData}
-                earnings={earningsData}
-                referrals={referralsData}
+                poolData={stats?.systemPool || null}
+              />
+            </div>
+          )}
+
+          {/* TAB 10: JOIN / ONBOARDING ACTIVATION */}
+          {activeTab === 'referrals' && (
+            <div className="space-y-6 max-w-4xl mx-auto py-2">
+              <div className="text-center space-y-1">
+                <h2 className="text-2xl font-black text-white">AIQX Matrix X Activation</h2>
+                <p className="text-xs text-[#8B949E]">
+                  100 AIQX Initial Activation with permanent sequential ID and automated 3-tier distribution.
+                </p>
+              </div>
+
+              <JoinSection
+                config={config}
+                initialReferral={referralParam || '1'}
                 aiqxBalance={aiqxBalance}
                 solBalance={solBalance}
-                onRefresh={() => {
+                isRegistered={isRegistered}
+                onJoinSuccess={() => {
                   loadUserData();
                   loadPlatformData();
+                  setActiveTab('matrix-x');
                 }}
+                onRefreshBalances={loadUserData}
                 onGoToDex={() => setActiveTab('terminal')}
+                onGoToDashboard={() => setActiveTab('dashboard')}
               />
-            ) : (
-              <div className="max-w-lg mx-auto p-6 rounded-xl bg-[#11161E] border border-[#1E2533] text-center space-y-4">
-                <span className="px-2 py-0.5 rounded text-[10px] font-mono bg-[#171D27] text-[#F5A623] border border-[#232B3B]">
-                  Unregistered Wallet
-                </span>
-                <h3 className="text-lg font-bold text-white">Not Registered Yet</h3>
-                <p className="text-xs text-[#8B949E]">
-                  Your connected wallet is not yet registered in the AIQX referral contract.
-                  Join to unlock your personal referral link and marketing earnings.
-                </p>
-                <button
-                  onClick={() => setActiveTab('referrals')}
-                  className="px-4 py-2 rounded-lg bg-[#F5A623] hover:bg-[#e59917] text-[#0B0E11] font-bold text-xs cursor-pointer shadow-md"
-                >
-                  Go to Join Activation
-                </button>
-              </div>
-            )}
-          </div>
-        )}
-      </main>
+            </div>
+          )}
 
-      {/* Clean Minimalist Institutional Footer */}
-      <footer className="border-t border-[#1E2533] bg-[#0B0E11] py-4 text-xs text-[#8B949E] mt-auto">
+          {/* TAB 11: CROSSOVER */}
+          {activeTab === 'crossover' && (
+            <CrossoverSection
+              config={config}
+              user={displayUser}
+              onNavigateToMatrix={() => setActiveTab('matrix-x')}
+            />
+          )}
+
+          {/* TAB 12: EARNINGS */}
+          {activeTab === 'earnings' && (
+            <EarningsSection
+              config={config}
+              user={displayUser}
+              earnings={displayEarnings}
+              aiqxPriceUsd={poolMetrics.baseTokenPriceUsd}
+            />
+          )}
+        </main>
+      </div>
+
+      {/* Minimalist Footer */}
+      <footer className="border-t border-[#1E2533] bg-[#0B0E14] py-4 text-xs text-[#8B949E] mt-auto">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex flex-col sm:flex-row items-center justify-between gap-3">
           <div className="flex items-center space-x-2">
             <SolanaLogo className="w-3.5 h-3.5" />
-            <span className="font-bold text-white text-xs">AIQX Protocol</span>
+            <span className="font-bold text-white text-xs">AIQX Foundation Matrix</span>
             <span className="text-[#363E4D]">•</span>
-            <span className="text-[11px] text-[#6E7681]">Solana Community DEX & Referral Network</span>
+            <span className="text-[11px] text-[#6E7681]">14-Level Doubling Slot Matrix on Solana</span>
           </div>
 
-          <button
-            onClick={() => setIsTokenGuideOpen(true)}
-            className="text-[11px] text-[#8B949E] hover:text-[#F5A623] transition-colors cursor-pointer flex items-center space-x-1 font-mono"
-          >
-            <span>View Token Specifications & Guide</span>
-            <span>→</span>
-          </button>
+          <div className="flex items-center space-x-4">
+            <button
+              onClick={() => setActiveTab('docs')}
+              className="text-[11px] text-[#8B949E] hover:text-blue-400 transition-colors cursor-pointer font-mono"
+            >
+              Docs &amp; Audits
+            </button>
+            <button
+              onClick={() => setIsTokenGuideOpen(true)}
+              className="text-[11px] text-[#8B949E] hover:text-blue-400 transition-colors cursor-pointer flex items-center space-x-1 font-mono"
+            >
+              <span>Token Guide</span>
+              <span>→</span>
+            </button>
+          </div>
         </div>
       </footer>
 
-      {/* Complete Token Guide & Specification Modal */}
+      {/* Token Guide Modal */}
       <TokenGuideModal
         isOpen={isTokenGuideOpen}
         onClose={() => setIsTokenGuideOpen(false)}

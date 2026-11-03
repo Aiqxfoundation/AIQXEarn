@@ -66,6 +66,7 @@ export const DexSwap: FC<DexSwapProps> = ({
   const [timeframe, setTimeframe] = useState<'1H' | '24H' | '7D' | '30D'>('24H');
   const [isSwapping, setIsSwapping] = useState<boolean>(false);
   const [swapSuccessMsg, setSwapSuccessMsg] = useState<string | null>(null);
+  const [swapError, setSwapError] = useState<string | null>(null);
 
   // Approximate Market Price Constants (can adjust with live pool ratio)
   // 1 SOL = ~25,000 AIQX (~$0.008 per AIQX if SOL is ~$200)
@@ -180,18 +181,19 @@ export const DexSwap: FC<DexSwapProps> = ({
 
   // Direct Swap Execution Handler
   const handleExecuteSwap = async () => {
+    setSwapError(null);
     if (!connected) {
       setVisible(true);
       return;
     }
 
     if (swapMode === 'buy' && parsedInput > solBalance) {
-      alert('Insufficient SOL balance for this swap.');
+      setSwapError('Insufficient SOL balance for this swap.');
       return;
     }
 
     if (swapMode === 'sell' && parsedInput > aiqxBalance) {
-      alert('Insufficient AIQX balance for this swap.');
+      setSwapError('Insufficient AIQX balance for this swap.');
       return;
     }
 
