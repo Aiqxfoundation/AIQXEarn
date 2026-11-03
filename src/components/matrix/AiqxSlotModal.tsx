@@ -21,10 +21,10 @@ import {
   MatrixLevelConfig,
   OFFICIAL_TREASURY_WALLET,
 } from '../../lib/referral-engine';
-import { SlotOccupant, SlotCardData } from './ForsageSlotCard';
+import { SlotOccupant, SlotCardData } from './AiqxSlotCard';
 import { getExplorerUrl } from '../../lib/solana';
 
-interface ForsageSlotModalProps {
+interface AiqxSlotModalProps {
   levelConfig: MatrixLevelConfig;
   isOpen: boolean;
   onClose: () => void;
@@ -36,7 +36,7 @@ interface ForsageSlotModalProps {
   connected: boolean;
 }
 
-export const ForsageSlotModal: FC<ForsageSlotModalProps> = ({
+export const AiqxSlotModal: FC<AiqxSlotModalProps> = ({
   levelConfig,
   isOpen,
   onClose,
@@ -264,7 +264,7 @@ export const ForsageSlotModal: FC<ForsageSlotModalProps> = ({
             </div>
           </div>
 
-          {/* Forsage Visual Matrix Tree & Spots Diagram */}
+          {/* AIQX Matrix Visual Tree & Spots Diagram */}
           <div className="p-5 sm:p-6 rounded-2xl bg-[#080B10] border border-[#1A2332] space-y-4">
             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-3 border-b border-[#171F2C]">
               <div>
@@ -279,7 +279,7 @@ export const ForsageSlotModal: FC<ForsageSlotModalProps> = ({
                 </p>
               </div>
 
-              {/* Forsage Color Legend */}
+              {/* Matrix Color Legend */}
               <div className="flex flex-wrap items-center gap-2 text-[10px] font-mono">
                 <span className="flex items-center space-x-1.5 px-2 py-1 rounded-md bg-[#0F141E] border border-emerald-500/30 text-emerald-400">
                   <span className="w-2 h-2 rounded-full bg-emerald-400" />
@@ -437,69 +437,52 @@ export const ForsageSlotModal: FC<ForsageSlotModalProps> = ({
                 No occupants in this cycle yet. Share your referral link to place members directly or receive spillover!
               </div>
             ) : (
-              <div className="overflow-x-auto">
-                <table className="w-full text-left text-xs font-mono">
-                  <thead>
-                    <tr className="border-b border-[#1A2332] text-[#8B949E] text-[10px] uppercase">
-                      <th className="pb-2.5">Spot</th>
-                      <th className="pb-2.5">User ID</th>
-                      <th className="pb-2.5">Wallet</th>
-                      <th className="pb-2.5">Placement</th>
-                      <th className="pb-2.5">Reward</th>
-                      <th className="pb-2.5">Tx Signature</th>
-                    </tr>
-                  </thead>
-                  <tbody className="divide-y divide-[#151C28]">
-                    {occupants.map((occ) => (
-                      <tr key={occ.position} className="hover:bg-[#0E141E]/50">
-                        <td className="py-2.5 font-bold text-white">#{occ.position}</td>
-                        <td className="py-2.5 font-bold text-[#F5A623]">ID #{occ.userId}</td>
-                        <td className="py-2.5 text-[#C9D1D9]">
-                          <div className="flex items-center space-x-1">
-                            <span>{occ.wallet.slice(0, 4)}...{occ.wallet.slice(-4)}</span>
-                            <a
-                              href={getExplorerUrl(occ.wallet, 'address')}
-                              target="_blank"
-                              rel="noreferrer"
-                              className="text-[#8B949E] hover:text-cyan-400"
-                            >
-                              <ExternalLink className="w-2.5 h-2.5" />
-                            </a>
-                          </div>
-                        </td>
-                        <td className="py-2.5">
-                          <span
-                            className={`px-2 py-0.5 rounded text-[10px] font-bold ${
-                              occ.placementType === 'direct'
-                                ? 'bg-emerald-500/15 text-emerald-400'
-                                : occ.placementType === 'spillover_above'
-                                ? 'bg-amber-500/15 text-amber-400'
-                                : occ.placementType === 'reinvest'
-                                ? 'bg-cyan-500/15 text-cyan-400'
-                                : 'bg-purple-500/15 text-purple-400'
-                            }`}
-                          >
-                            {occ.placementType.replace('_', ' ')}
-                          </span>
-                        </td>
-                        <td className="py-2.5 font-bold text-emerald-400">
-                          +{occ.rewardEarned.toLocaleString()} AIQX
-                        </td>
-                        <td className="py-2.5 text-[#8B949E]">
-                          <a
-                            href={getExplorerUrl(occ.txSignature, 'tx')}
-                            target="_blank"
-                            rel="noreferrer"
-                            className="hover:text-cyan-400 flex items-center space-x-1"
-                          >
-                            <span>{occ.txSignature.slice(0, 6)}...</span>
-                            <ExternalLink className="w-2.5 h-2.5" />
-                          </a>
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+                {occupants.map((occ) => (
+                  <div
+                    key={occ.position}
+                    className="p-3.5 rounded-2xl bg-[#0E141E] border border-[#1A2332] hover:border-cyan-500/30 transition-all space-y-2"
+                  >
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center space-x-2">
+                        <span className="w-6 h-6 rounded-lg bg-blue-600/20 text-blue-400 border border-blue-500/30 flex items-center justify-center font-bold text-xs">
+                          #{occ.position}
+                        </span>
+                        <span className="font-bold text-white text-xs">ID #{occ.userId}</span>
+                      </div>
+                      <span
+                        className={`px-2 py-0.5 rounded text-[10px] font-bold uppercase ${
+                          occ.placementType === 'direct'
+                            ? 'bg-emerald-500/15 text-emerald-400'
+                            : occ.placementType === 'spillover_above'
+                            ? 'bg-amber-500/15 text-amber-400'
+                            : occ.placementType === 'reinvest'
+                            ? 'bg-cyan-500/15 text-cyan-400'
+                            : 'bg-purple-500/15 text-purple-400'
+                        }`}
+                      >
+                        {occ.placementType.replace('_', ' ')}
+                      </span>
+                    </div>
+
+                    <div className="flex items-center justify-between text-xs text-[#8B949E] pt-1">
+                      <div className="flex items-center space-x-1">
+                        <span>{occ.wallet.slice(0, 4)}...{occ.wallet.slice(-4)}</span>
+                        <a
+                          href={getExplorerUrl(occ.wallet, 'address')}
+                          target="_blank"
+                          rel="noreferrer"
+                          className="hover:text-cyan-400"
+                        >
+                          <ExternalLink className="w-3 h-3" />
+                        </a>
+                      </div>
+                      <span className="font-bold text-emerald-400">
+                        +{occ.rewardEarned.toLocaleString()} AIQX
+                      </span>
+                    </div>
+                  </div>
+                ))}
               </div>
             )}
           </div>

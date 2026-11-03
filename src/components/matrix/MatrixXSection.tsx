@@ -28,8 +28,8 @@ import {
   createAtomicLevelUpgradeTransaction,
   getExplorerUrl,
 } from '../../lib/solana';
-import { ForsageSlotCard, SlotCardData } from './ForsageSlotCard';
-import { ForsageSlotModal } from './ForsageSlotModal';
+import { AiqxSlotCard, SlotCardData } from './AiqxSlotCard';
+import { AiqxSlotModal } from './AiqxSlotModal';
 
 interface MatrixXSectionProps {
   config: AppConfig;
@@ -184,7 +184,7 @@ export const MatrixXSection: FC<MatrixXSectionProps> = ({
         <div className="space-y-1.5">
           <div className="flex items-center space-x-2">
             <span className="px-2.5 py-0.5 rounded-full text-[10px] font-mono font-extrabold bg-[#F5A623]/15 text-[#F5A623] border border-[#F5A623]/30 tracking-wider uppercase">
-              Forsage-Architecture Slot Matrix
+              AIQX Matrix Architecture
             </span>
             <span className="text-xs text-[#8B949E]">|</span>
             <span className="text-xs text-[#8B949E] font-mono">
@@ -211,7 +211,7 @@ export const MatrixXSection: FC<MatrixXSectionProps> = ({
         </div>
       </div>
 
-      {/* Forsage Visual Color Legend Bar */}
+      {/* Visual Color Legend Bar */}
       <div className="p-4 rounded-2xl bg-[#0D1219] border border-[#1A2332] flex flex-col md:flex-row md:items-center justify-between gap-3 text-xs">
         <div className="flex items-center space-x-2 text-[#8B949E] text-xs font-mono">
           <Layers className="w-4 h-4 text-[#F5A623]" />
@@ -288,7 +288,7 @@ export const MatrixXSection: FC<MatrixXSectionProps> = ({
         </div>
       </div>
 
-      {/* 14-Level Doubling Forsage Grid */}
+      {/* 14-Level Doubling Matrix Grid */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
         {filteredLevels.map((lvl) => {
           const isUnlocked = userActiveLevels.includes(lvl.level);
@@ -310,7 +310,7 @@ export const MatrixXSection: FC<MatrixXSectionProps> = ({
           } : undefined);
 
           return (
-            <ForsageSlotCard
+            <AiqxSlotCard
               key={lvl.level}
               config={lvl}
               isUnlocked={isUnlocked}
@@ -324,9 +324,9 @@ export const MatrixXSection: FC<MatrixXSectionProps> = ({
         })}
       </div>
 
-      {/* Forsage Detailed Slot Inspector Modal */}
+      {/* AIQX Matrix Detailed Slot Inspector Modal */}
       {inspectingLevel && (
-        <ForsageSlotModal
+        <AiqxSlotModal
           levelConfig={inspectingLevel}
           isOpen={Boolean(inspectingLevel)}
           onClose={() => setInspectingLevel(null)}

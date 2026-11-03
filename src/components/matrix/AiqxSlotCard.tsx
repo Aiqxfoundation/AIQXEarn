@@ -30,7 +30,7 @@ export interface SlotCardData {
   occupants: SlotOccupant[];
 }
 
-interface ForsageSlotCardProps {
+interface AiqxSlotCardProps {
   config: MatrixLevelConfig;
   isUnlocked: boolean;
   isNextInLine: boolean;
@@ -40,7 +40,7 @@ interface ForsageSlotCardProps {
   onActivate: (config: MatrixLevelConfig) => void;
 }
 
-export const ForsageSlotCard: FC<ForsageSlotCardProps> = ({
+export const AiqxSlotCard: FC<AiqxSlotCardProps> = ({
   config,
   isUnlocked,
   isNextInLine,
@@ -120,7 +120,7 @@ export const ForsageSlotCard: FC<ForsageSlotCardProps> = ({
             </div>
           </div>
 
-          {/* Forsage Cycle & Partner Counters */}
+          {/* AIQX Matrix Cycle & Partner Counters */}
           <div className="flex items-center space-x-1.5">
             {/* Cycle / Recycle Counter */}
             <div
@@ -157,7 +157,7 @@ export const ForsageSlotCard: FC<ForsageSlotCardProps> = ({
         </div>
       </div>
 
-      {/* Forsage Signature Visual Circle Spots Layout */}
+      {/* AIQX Matrix Signature Visual Circle Spots Layout */}
       <div className="py-4 my-auto">
         <div className="flex items-center justify-between mb-2">
           <span className="text-[10px] font-mono uppercase tracking-wider text-[#7E8B9B]">

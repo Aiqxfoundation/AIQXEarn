@@ -3,8 +3,8 @@ import { useWallet, useConnection } from '@solana/wallet-adapter-react';
 import { WalletMultiButton } from '@solana/wallet-adapter-react-ui';
 import { WalletProvider, useWalletNotice } from './context/WalletProvider';
 import { Header, NavigationTab } from './components/Header';
-import { ForsageSidebar } from './components/ForsageSidebar';
-import { ForsageDashboard } from './components/ForsageDashboard';
+import { AiqxSidebar } from './components/AiqxSidebar';
+import { AiqxDashboard } from './components/AiqxDashboard';
 import { DocsSection } from './components/DocsSection';
 import { RealCandlestickChart } from './components/RealCandlestickChart';
 import { RealSwapTerminal } from './components/RealSwapTerminal';
@@ -104,7 +104,7 @@ function AppContent() {
     tree: { l1: [], l2: [], l3: [] },
   });
 
-  // Forsage Preview ID State
+  // Member Preview ID State
   const [previewIdInput, setPreviewIdInput] = useState<string>('1');
   const [isPreviewMode, setIsPreviewMode] = useState<boolean>(false);
   const [previewUserData, setPreviewUserData] = useState<UserRecord | null>(null);
@@ -305,7 +305,7 @@ function AppContent() {
 
   return (
     <div className="min-h-screen flex flex-col bg-[#0B0E14] text-[#E6EDF3]">
-      {/* Forsage-style Top Banner */}
+      {/* AIQX Matrix Top Bar */}
       <Header
         config={config}
         activeTab={activeTab}
@@ -343,7 +343,7 @@ function AppContent() {
       {/* Main Viewport Container with Left Sidebar */}
       <div className="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-5 flex gap-6">
         {/* Left Sidebar (Desktop) */}
-        <ForsageSidebar
+        <AiqxSidebar
           activeTab={activeTab}
           setActiveTab={setActiveTab}
           onOpenTokenGuide={() => setIsTokenGuideOpen(true)}
@@ -352,9 +352,9 @@ function AppContent() {
 
         {/* Center / Right Operational Viewport */}
         <main className="flex-1 min-w-0">
-          {/* TAB 1: UNIFIED FORSAGE MATRIX DASHBOARD */}
+          {/* TAB 1: UNIFIED AIQX MATRIX DASHBOARD */}
           {activeTab === 'dashboard' && displayUser && (
-            <ForsageDashboard
+            <AiqxDashboard
               config={config}
               user={displayUser}
               earnings={displayEarnings}
@@ -382,7 +382,7 @@ function AppContent() {
             />
           )}
 
-          {/* TAB: DEDICATED SEPARATE SLOT TREE VIEW (NO TEXT ONLY UI & TREE) */}
+          {/* TAB: DEDICATED SEPARATE SLOT TREE VIEW (STRUCTURED LIKE DASHBOARD) */}
           {activeTab === 'slot-tree' && displayUser && (
             <SlotTreeView
               config={config}
@@ -396,6 +396,8 @@ function AppContent() {
                 loadPreviewMember(String(id));
               }}
               isActivating={isActivatingSlot}
+              baseTokenPriceUsd={poolMetrics.baseTokenPriceUsd}
+              totalEarnings={displayEarnings.totalEarnings}
             />
           )}
 
@@ -487,14 +489,14 @@ function AppContent() {
         </div>
       )}
 
-      {/* Minimalist Footer */}
+      {/* Clean Footer */}
       <footer className="border-t border-[#1E2533] bg-[#0B0E14] py-4 text-xs text-[#8B949E] mt-auto">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex flex-col sm:flex-row items-center justify-between gap-3">
           <div className="flex items-center space-x-2">
             <SolanaLogo className="w-3.5 h-3.5" />
-            <span className="font-bold text-white text-xs">AIQX Foundation Matrix</span>
+            <span className="font-bold text-white text-xs">AIQX Matrix</span>
             <span className="text-[#363E4D]">•</span>
-            <span className="text-[11px] text-[#6E7681]">14-Level Doubling Slot Matrix on Solana</span>
+            <span className="text-[11px] text-[#6E7681]">Solana</span>
           </div>
 
           <div className="flex items-center space-x-4">
@@ -502,15 +504,22 @@ function AppContent() {
               onClick={() => setActiveTab('docs')}
               className="text-[11px] text-[#8B949E] hover:text-blue-400 transition-colors cursor-pointer font-mono"
             >
-              Docs &amp; Audits
+              Docs
             </button>
             <button
-              onClick={() => setIsTokenGuideOpen(true)}
-              className="text-[11px] text-[#8B949E] hover:text-blue-400 transition-colors cursor-pointer flex items-center space-x-1 font-mono"
+              onClick={() => setActiveTab('terminal')}
+              className="text-[11px] text-[#8B949E] hover:text-blue-400 transition-colors cursor-pointer font-mono"
             >
-              <span>Token Guide</span>
-              <span>→</span>
+              DEX
             </button>
+            <a
+              href="https://explorer.solana.com/address/AiqxkvBcvugexLRRxFXBYxT5ekcrSb9noosq3VqBTRFD"
+              target="_blank"
+              rel="noreferrer"
+              className="text-[11px] text-[#8B949E] hover:text-blue-400 transition-colors cursor-pointer font-mono"
+            >
+              Explorer
+            </a>
           </div>
         </div>
       </footer>

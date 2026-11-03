@@ -254,7 +254,6 @@ app.get('/api/team/picture/:idOrWallet', async (req: Request, res: Response) => 
 
     res.json({
       success: true,
-      blueprintImageUrl: '/assets/aistudio/images__89__1b7e0220.jpeg',
       rootUser: {
         id: rootUser.id,
         wallet: rootUser.wallet,
@@ -278,7 +277,7 @@ app.get('/api/team/picture/:idOrWallet', async (req: Request, res: Response) => 
   }
 });
 
-// API: Forsage-Style Slot Detail for specific Slot (Tree & Occupants)
+// API: AIQX Matrix Slot Detail for specific Slot (Tree & Occupants)
 app.get('/api/matrix/slot-detail', async (req: Request, res: Response) => {
   try {
     const idOrWallet = (req.query.wallet || req.query.id) as string;

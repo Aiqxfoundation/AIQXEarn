@@ -20,7 +20,7 @@ import {
   OFFICIAL_TREASURY_WALLET,
 } from '../../lib/referral-engine';
 import { AppConfig } from '../../lib/solana';
-import { ForsageSlotModal } from './ForsageSlotModal';
+import { AiqxSlotModal } from './AiqxSlotModal';
 
 interface MySlotsSectionProps {
   config: AppConfig;
@@ -65,7 +65,7 @@ export const MySlotsSection: FC<MySlotsSectionProps> = ({
           <div className="flex items-center space-x-2">
             <span className="w-2.5 h-2.5 rounded-full bg-emerald-400 animate-pulse" />
             <span className="text-xs font-mono font-bold uppercase tracking-wider text-emerald-400">
-              Forsage 14-Level Slot Architecture
+              AIQX Matrix 14-Level Architecture
             </span>
             <span className="text-xs text-[#8B949E]">|</span>
             <span className="text-xs text-[#8B949E] font-mono">
@@ -129,7 +129,7 @@ export const MySlotsSection: FC<MySlotsSectionProps> = ({
         </div>
       </div>
 
-      {/* Forsage Color Legend Bar */}
+      {/* Matrix Color Legend Bar */}
       <div className="p-3.5 rounded-xl bg-[#0D1219] border border-[#1A2332] flex flex-wrap items-center justify-between gap-2.5 text-[11px] font-mono">
         <span className="text-white font-bold flex items-center space-x-1.5">
           <Layers className="w-3.5 h-3.5 text-[#F5A623]" />
@@ -155,7 +155,7 @@ export const MySlotsSection: FC<MySlotsSectionProps> = ({
         </div>
       </div>
 
-      {/* Active Slots Progression Cards with Forsage Visual Spots */}
+      {/* Active Slots Progression Cards with Visual Spots */}
       <div className="space-y-3">
         <h3 className="text-sm font-bold text-white uppercase tracking-wider flex items-center space-x-2">
           <Layers className="w-4 h-4 text-[#F5A623]" />
@@ -225,7 +225,7 @@ export const MySlotsSection: FC<MySlotsSectionProps> = ({
                   </div>
                 </div>
 
-                {/* Forsage Visual Spots Preview */}
+                {/* Visual Spots Preview */}
                 <div className="p-3 rounded-xl bg-[#080B10] border border-[#18202D] flex items-center justify-between">
                   <div className="flex items-center space-x-2">
                     {Array.from({ length: previewSpots }).map((_, idx) => {
@@ -295,7 +295,7 @@ export const MySlotsSection: FC<MySlotsSectionProps> = ({
 
       {/* Slot Inspector Modal */}
       {inspectingLevel && (
-        <ForsageSlotModal
+        <AiqxSlotModal
           levelConfig={inspectingLevel}
           isOpen={Boolean(inspectingLevel)}
           onClose={() => setInspectingLevel(null)}

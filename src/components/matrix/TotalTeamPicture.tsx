@@ -1,27 +1,18 @@
 import React, { FC, useState, useEffect } from 'react';
 import {
   Users,
-  GitBranch,
   Crown,
-  Sparkles,
   ChevronRight,
   ExternalLink,
   Copy,
   Check,
-  Search,
-  Filter,
-  Eye,
-  ArrowRight,
-  Layers,
-  Repeat,
-  ShieldCheck,
-  Award,
-  Zap,
-  Info,
-  Maximize2,
   RefreshCw,
+  ZoomIn,
+  ZoomOut,
+  RotateCcw,
+  Zap,
 } from 'lucide-react';
-import { UserRecord, MATRIX_SLOTS_CONFIG } from '../../lib/referral-engine';
+import { UserRecord } from '../../lib/referral-engine';
 import { AppConfig, formatAddress, getExplorerUrl } from '../../lib/solana';
 
 interface TeamMemberNode {
@@ -36,7 +27,6 @@ interface TeamMemberNode {
 }
 
 interface TeamPictureData {
-  blueprintImageUrl: string;
   rootUser: {
     id: number;
     wallet: string;
@@ -83,11 +73,14 @@ export const TotalTeamPicture: FC<TotalTeamPictureProps> = ({
 }) => {
   const [loading, setLoading] = useState<boolean>(false);
   const [teamData, setTeamData] = useState<TeamPictureData | null>(null);
-  const [selectedMember, setSelectedMember] = useState<TeamMemberNode | null>(null);
-  const [activeFilterSlot, setActiveFilterSlot] = useState<number>(0); // 0 = all
-  const [searchQuery, setSearchQuery] = useState<string>('');
+  const [selectedMember, setSelectedMember] = useState<{
+    id: number;
+    wallet: string;
+    level: string;
+    slots: number;
+  } | null>(null);
   const [copiedWallet, setCopiedWallet] = useState<string | null>(null);
-  const [viewMode, setViewMode] = useState<'interactive' | 'blueprint' | 'both'>('interactive');
+  const [zoomLevel, setZoomLevel] = useState<number>(1);
 
   const rootIdOrWallet = currentUser?.id ? String(currentUser.id) : (currentUser?.wallet || '1');
 
@@ -120,14 +113,7 @@ export const TotalTeamPicture: FC<TotalTeamPictureProps> = ({
     }
   };
 
-  // Build 3 branches for the 3-wide tree view
   const directList = teamData?.directPartners || [];
-  const branch1 = directList[0] || null;
-  const branch2 = directList[1] || null;
-  const branch3 = directList[2] || null;
-
-  const branches = [branch1, branch2, branch3];
-
   const rootMember = teamData?.rootUser || {
     id: currentUser?.id || 1,
     wallet: currentUser?.wallet || 'GenesisRootWallet',
@@ -139,475 +125,394 @@ export const TotalTeamPicture: FC<TotalTeamPictureProps> = ({
     directPartnersCount: referrals.l1Count,
   };
 
+  // 3 Direct Branches
+  const b1 = directList[0] || null;
+  const b2 = directList[1] || null;
+  const b3 = directList[2] || null;
+
   return (
-    <div className="space-y-6 max-w-7xl mx-auto py-2">
-      {/* Top Banner: Total Team Architecture */}
-      <div className="relative overflow-hidden rounded-3xl bg-gradient-to-r from-[#0F141E] via-[#121927] to-[#0D121B] border border-[#1E2738] p-6 sm:p-8 shadow-2xl">
-        <div className="absolute top-0 right-0 w-96 h-96 bg-radial from-blue-500/10 via-purple-500/5 to-transparent rounded-full blur-3xl pointer-events-none" />
-
-        <div className="relative z-10 flex flex-col md:flex-row md:items-center justify-between gap-6">
-          <div className="space-y-2 max-w-2xl">
-            <div className="inline-flex items-center space-x-2 px-3 py-1 rounded-full bg-blue-500/10 border border-blue-500/30 text-[11px] font-mono text-blue-400">
-              <Users className="w-3.5 h-3.5" />
-              <span>Full Picture of Total Team Architecture</span>
-            </div>
-            <h1 className="text-2xl sm:text-3xl font-black text-white tracking-tight">
-              Total Team Topology
-            </h1>
-            <p className="text-xs sm:text-sm text-[#8B949E] leading-relaxed">
-              Standard 3-Wide Organization: 1 Leader (Red) → 3 Direct Partners (Green) → 9 Sub-downlines (Cyan). Everyone earns under independent slots with identical residual rewards.
-            </p>
+    <div className="space-y-6 max-w-7xl mx-auto py-2 animate-fadeIn">
+      {/* Top Header Controls */}
+      <div className="flex items-center justify-between p-5 rounded-3xl bg-[#111622] border border-[#1E2533] shadow-md">
+        <div className="flex items-center space-x-3">
+          <div className="w-10 h-10 rounded-2xl bg-blue-600/20 text-blue-400 border border-blue-500/30 flex items-center justify-center font-bold">
+            <Users className="w-5 h-5" />
           </div>
-
-          {/* View mode toggle */}
-          <div className="flex items-center space-x-2 p-1.5 rounded-2xl bg-[#0B0E14] border border-[#1E2533] self-start md:self-auto shrink-0">
-            <button
-              onClick={() => setViewMode('interactive')}
-              className={`px-3.5 py-2 rounded-xl text-xs font-bold transition-all cursor-pointer ${
-                viewMode === 'interactive'
-                  ? 'bg-blue-600 text-white shadow-md'
-                  : 'text-[#8B949E] hover:text-white'
-              }`}
-            >
-              Interactive Tree
-            </button>
-            <button
-              onClick={() => setViewMode('blueprint')}
-              className={`px-3.5 py-2 rounded-xl text-xs font-bold transition-all cursor-pointer ${
-                viewMode === 'blueprint'
-                  ? 'bg-blue-600 text-white shadow-md'
-                  : 'text-[#8B949E] hover:text-white'
-              }`}
-            >
-              Blueprint Reference
-            </button>
-            <button
-              onClick={() => setViewMode('both')}
-              className={`px-3.5 py-2 rounded-xl text-xs font-bold transition-all cursor-pointer ${
-                viewMode === 'both'
-                  ? 'bg-blue-600 text-white shadow-md'
-                  : 'text-[#8B949E] hover:text-white'
-              }`}
-            >
-              Side-by-Side
-            </button>
+          <div>
+            <h1 className="text-xl font-black text-white tracking-tight">
+              Partners &amp; Team Architecture
+            </h1>
+            <span className="text-xs font-mono text-[#8B949E]">
+              1 Leader → 3 Directs (50%) → 9 Downlines (30%)
+            </span>
           </div>
         </div>
 
-        {/* Metrics Cards Strip */}
-        <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mt-6 pt-6 border-t border-[#1B2332]">
-          <div className="p-4 rounded-2xl bg-[#090C12]/80 border border-[#1A2230]">
-            <span className="text-[11px] font-mono text-[#8B949E] block">Total Team Network</span>
-            <span className="text-2xl font-black font-mono text-white mt-1 block">
-              {teamData?.metrics.totalTeamCount ?? referrals.totalNetworkCount}
-            </span>
-            <span className="text-[10px] text-emerald-400 font-mono">Members across all tiers</span>
-          </div>
+        <button
+          onClick={loadTeamData}
+          disabled={loading}
+          className="p-2.5 rounded-2xl bg-[#151D2A] hover:bg-[#1E293B] text-white border border-[#222E42] transition-colors cursor-pointer flex items-center justify-center shadow-sm"
+          title="Refresh Tree"
+        >
+          <RefreshCw className={`w-4 h-4 text-blue-400 ${loading ? 'animate-spin' : ''}`} />
+        </button>
+      </div>
 
-          <div className="p-4 rounded-2xl bg-[#090C12]/80 border border-[#1A2230]">
-            <span className="text-[11px] font-mono text-[#8B949E] block">Tier 1 Directs (Green)</span>
-            <span className="text-2xl font-black font-mono text-emerald-400 mt-1 block">
-              {teamData?.metrics.directCount ?? referrals.l1Count}
-            </span>
-            <span className="text-[10px] text-[#8B949E] font-mono">3-wide primary branches</span>
+      {/* 4 Clean Metric Cards */}
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+        <div className="p-5 rounded-3xl bg-[#111622] border border-[#1E2533] shadow-sm">
+          <div className="text-xs text-[#8B949E] mb-1 font-mono">Total Team</div>
+          <div className="text-2xl sm:text-3xl font-black text-white font-mono">
+            {referrals.totalNetworkCount}
           </div>
+        </div>
 
-          <div className="p-4 rounded-2xl bg-[#090C12]/80 border border-[#1A2230]">
-            <span className="text-[11px] font-mono text-[#8B949E] block">Tier 2 Downlines (Cyan)</span>
-            <span className="text-2xl font-black font-mono text-cyan-400 mt-1 block">
-              {teamData?.metrics.secondGenCount ?? referrals.l2Count}
-            </span>
-            <span className="text-[10px] text-[#8B949E] font-mono">9 sub-branch nodes</span>
+        <div className="p-5 rounded-3xl bg-[#111622] border border-[#1E2533] shadow-sm">
+          <div className="text-xs text-[#8B949E] mb-1 font-mono">Line 1 (50%)</div>
+          <div className="text-2xl sm:text-3xl font-black text-emerald-400 font-mono">
+            {referrals.l1Count}
           </div>
+        </div>
 
-          <div className="p-4 rounded-2xl bg-[#090C12]/80 border border-[#1A2230]">
-            <span className="text-[11px] font-mono text-[#8B949E] block">Independent Slots</span>
-            <span className="text-2xl font-black font-mono text-[#F5A623] mt-1 block">
-              {rootMember.maxActiveSlot} / 12
-            </span>
-            <span className="text-[10px] text-[#F5A623]/80 font-mono">Active slot depth</span>
+        <div className="p-5 rounded-3xl bg-[#111622] border border-[#1E2533] shadow-sm">
+          <div className="text-xs text-[#8B949E] mb-1 font-mono">Line 2 (30%)</div>
+          <div className="text-2xl sm:text-3xl font-black text-blue-400 font-mono">
+            {referrals.l2Count}
+          </div>
+        </div>
+
+        <div className="p-5 rounded-3xl bg-[#111622] border border-[#1E2533] shadow-sm">
+          <div className="text-xs text-[#8B949E] mb-1 font-mono">Line 3 (5%)</div>
+          <div className="text-2xl sm:text-3xl font-black text-purple-400 font-mono">
+            {referrals.l3Count}
           </div>
         </div>
       </div>
 
-      {/* Main Content Area: Interactive Tree and/or Blueprint */}
-      <div className={`grid gap-6 ${viewMode === 'both' ? 'lg:grid-cols-12' : 'grid-cols-1'}`}>
-        {/* Blueprint Architecture Card (shows user uploaded image) */}
-        {(viewMode === 'blueprint' || viewMode === 'both') && (
-          <div className={`${viewMode === 'both' ? 'lg:col-span-5' : 'col-span-1'} p-6 rounded-3xl bg-[#0F141E] border border-[#1E2738] space-y-4`}>
-            <div className="flex items-center justify-between pb-3 border-b border-[#1A2332]">
-              <div className="flex items-center space-x-2">
-                <ShieldCheck className="w-4 h-4 text-emerald-400" />
-                <h3 className="text-sm font-bold text-white uppercase tracking-wider font-mono">
-                  Standard Topology Blueprint
-                </h3>
-              </div>
-              <span className="text-[10px] font-mono px-2 py-0.5 rounded bg-emerald-500/15 text-emerald-400 border border-emerald-500/30">
-                Official Rule
-              </span>
-            </div>
-
-            <p className="text-xs text-[#8B949E]">
-              Every slot in AIQX Independent Matrix follows this exact 3-wide topology:
-            </p>
-
-            {/* Embedded image reference */}
-            <div className="relative rounded-2xl overflow-hidden border border-[#232E40] bg-[#0A0D13] p-4 flex flex-col items-center justify-center">
-              <img
-                src="/assets/aistudio/images__89__1b7e0220.jpeg"
-                alt="Total Team Architecture Topology"
-                className="max-h-72 w-auto object-contain rounded-xl shadow-lg hover:scale-105 transition-transform duration-300"
-              />
-              <div className="mt-3 text-center space-y-1">
-                <div className="text-[11px] font-mono font-bold text-white">
-                  3-Wide Binary/Trinary Matrix Placement
-                </div>
-                <div className="text-[10px] text-[#8B949E]">
-                  Top Red (Leader) • 3 Green (Direct Partners) • 9 Cyan (Downline Partners)
-                </div>
-              </div>
-            </div>
-
-            {/* Rule Explanations */}
-            <div className="space-y-2 pt-2 text-xs text-[#8B949E]">
-              <div className="flex items-start space-x-2 p-2.5 rounded-xl bg-[#090C12] border border-[#18202D]">
-                <div className="w-2.5 h-2.5 rounded-full bg-red-500 mt-1 shrink-0" />
-                <div>
-                  <strong className="text-white block font-mono">Slot Owner (Red)</strong>
-                  <span>Owns the slot, receives direct payouts for spots 1..N and triggers recycling on final spot.</span>
-                </div>
-              </div>
-
-              <div className="flex items-start space-x-2 p-2.5 rounded-xl bg-[#090C12] border border-[#18202D]">
-                <div className="w-2.5 h-2.5 rounded-full bg-emerald-500 mt-1 shrink-0" />
-                <div>
-                  <strong className="text-white block font-mono">Direct Partners (Green)</strong>
-                  <span>Direct team partners. In Slot 1, 2 pay direct to owner and 1 recycles slot!</span>
-                </div>
-              </div>
-
-              <div className="flex items-start space-x-2 p-2.5 rounded-xl bg-[#090C12] border border-[#18202D]">
-                <div className="w-2.5 h-2.5 rounded-full bg-cyan-400 mt-1 shrink-0" />
-                <div>
-                  <strong className="text-white block font-mono">Team Downline (Cyan)</strong>
-                  <span>9 sub-downline positions (3 under each partner) that power the 40 AIQX leader pool.</span>
-                </div>
-              </div>
-            </div>
+      {/* ── UNIFIED CONNECTED VECTOR TREE CANVAS (100% LINKED, NEVER DISCONNECTED) ── */}
+      <div className="rounded-3xl bg-[#0A0D14] border border-[#1A2232] shadow-2xl overflow-hidden relative">
+        {/* Canvas Toolbar */}
+        <div className="bg-[#0E131E]/90 backdrop-blur-md border-b border-[#1A2333] px-6 py-3 flex items-center justify-between">
+          <div className="flex items-center space-x-2">
+            <span className="font-mono text-xs font-bold text-white">Connected Architecture</span>
+            <span className="text-[10px] font-mono text-emerald-400 bg-emerald-500/15 px-2 py-0.5 rounded-full border border-emerald-500/30">
+              Live Network
+            </span>
           </div>
-        )}
 
-        {/* Live Interactive Total Team Tree */}
-        {(viewMode === 'interactive' || viewMode === 'both') && (
-          <div className={`${viewMode === 'both' ? 'lg:col-span-7' : 'col-span-1'} p-6 rounded-3xl bg-[#0F141E] border border-[#1E2738] space-y-6`}>
-            {/* Tree Controls Header */}
-            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-4 border-b border-[#1A2332]">
-              <div className="flex items-center space-x-2">
-                <GitBranch className="w-4 h-4 text-[#F5A623]" />
-                <h3 className="text-sm font-bold text-white uppercase tracking-wider font-mono">
-                  Live Interactive Total Team Diagram
-                </h3>
-              </div>
+          {/* Zoom Controls */}
+          <div className="flex items-center space-x-1.5 px-1.5 py-1 rounded-xl bg-[#141B28] border border-[#202C3F]">
+            <button
+              onClick={() => setZoomLevel((z) => Math.max(0.6, z - 0.1))}
+              className="p-1 text-[#8B949E] hover:text-white rounded-lg cursor-pointer"
+              title="Zoom Out"
+            >
+              <ZoomOut className="w-3.5 h-3.5" />
+            </button>
+            <button
+              onClick={() => setZoomLevel(1)}
+              className="px-1 text-[10px] font-mono text-[#8B949E] hover:text-white cursor-pointer"
+              title="Reset Zoom"
+            >
+              {Math.round(zoomLevel * 100)}%
+            </button>
+            <button
+              onClick={() => setZoomLevel((z) => Math.min(1.4, z + 0.1))}
+              className="p-1 text-[#8B949E] hover:text-white rounded-lg cursor-pointer"
+              title="Zoom In"
+            >
+              <ZoomIn className="w-3.5 h-3.5" />
+            </button>
+          </div>
+        </div>
 
-              <div className="flex items-center space-x-2">
-                <button
-                  onClick={loadTeamData}
-                  disabled={loading}
-                  className="px-2.5 py-1 rounded-xl bg-[#151C27] hover:bg-[#1D2635] text-[11px] font-mono text-[#8B949E] hover:text-white flex items-center space-x-1.5 transition-colors cursor-pointer"
-                >
-                  <RefreshCw className={`w-3 h-3 ${loading ? 'animate-spin' : ''}`} />
-                  <span>Refresh</span>
-                </button>
-              </div>
-            </div>
+        {/* Tree Container: Fits on Mobile & Pans Cleanly */}
+        <div className="p-4 sm:p-8 flex flex-col items-center justify-center relative bg-[radial-gradient(#172133_1px,transparent_1px)] [background-size:24px_24px] overflow-x-auto min-h-[440px]">
+          <div
+            className="w-full flex justify-center transition-transform duration-150 ease-out origin-center"
+            style={{ transform: `scale(${zoomLevel})` }}
+          >
+            {/* SVG Tree: Fully self-contained coordinates. Nodes and lines are mathematically locked. */}
+            <svg
+              viewBox="0 0 900 440"
+              className="w-full max-w-4xl h-auto select-none"
+              style={{ minWidth: '320px' }}
+            >
+              <defs>
+                {/* Gradients */}
+                <linearGradient id="rootGrad" x1="0" y1="0" x2="0" y2="1">
+                  <stop offset="0%" stopColor="#2563EB" />
+                  <stop offset="100%" stopColor="#1E3A8A" />
+                </linearGradient>
 
-            {/* Tree Diagram Visual Canvas */}
-            <div className="relative rounded-2xl bg-[#080B10] border border-[#18202E] p-6 overflow-x-auto min-w-[340px]">
-              <div className="min-w-[620px] flex flex-col items-center space-y-8 py-2">
-                {/* 1. TOP NODE: Root Leader (Red Circle) */}
-                <div className="flex flex-col items-center group cursor-pointer" onClick={() => setSelectedMember({
-                  id: rootMember.id,
-                  wallet: rootMember.wallet,
-                  sponsorId: rootMember.sponsorId,
-                  joinTime: rootMember.joinTime,
-                  activeLevels: rootMember.activeLevels,
-                  maxActiveSlot: rootMember.maxActiveSlot,
-                  directSubCount: rootMember.directPartnersCount,
-                })}>
-                  <div className="relative">
-                    <div className="w-20 h-20 rounded-full bg-gradient-to-br from-red-500 via-rose-600 to-red-800 border-4 border-red-400/80 shadow-[0_0_28px_rgba(239,68,68,0.5)] flex flex-col items-center justify-center text-white transition-transform group-hover:scale-105">
-                      <Crown className="w-5 h-5 text-amber-300 drop-shadow mb-0.5" />
-                      <span className="text-xs font-mono font-black">#{rootMember.id}</span>
-                    </div>
-                    <span className="absolute -bottom-1 left-1/2 -translate-x-1/2 px-2 py-0.5 rounded-full bg-red-600 text-[9px] font-extrabold uppercase font-mono tracking-wider text-white border border-red-300 shadow">
-                      Leader
-                    </span>
-                  </div>
+                <linearGradient id="dirGrad" x1="0" y1="0" x2="0" y2="1">
+                  <stop offset="0%" stopColor="#10B981" />
+                  <stop offset="100%" stopColor="#047857" />
+                </linearGradient>
 
-                  <div className="mt-3 text-center">
-                    <div className="text-xs font-bold text-white font-mono flex items-center justify-center space-x-1">
-                      <span>{formatAddress(rootMember.wallet)}</span>
-                    </div>
-                    <div className="text-[10px] text-amber-400 font-mono font-semibold">
-                      Slots Active: {rootMember.maxActiveSlot} / 12
-                    </div>
-                  </div>
-                </div>
+                <linearGradient id="downGrad" x1="0" y1="0" x2="0" y2="1">
+                  <stop offset="0%" stopColor="#06B6D4" />
+                  <stop offset="100%" stopColor="#0E7490" />
+                </linearGradient>
 
-                {/* Vertical Connector Line 1 */}
-                <div className="w-[2px] h-6 bg-gradient-to-b from-red-500/80 to-[#2A374E]" />
+                <linearGradient id="emptyGrad" x1="0" y1="0" x2="0" y2="1">
+                  <stop offset="0%" stopColor="#141C2A" />
+                  <stop offset="100%" stopColor="#0D131E" />
+                </linearGradient>
 
-                {/* Horizontal Connector Bar across 3 Branches */}
-                <div className="relative w-[540px] h-[2px] bg-[#2A374E]">
-                  {/* Branch tick 1 */}
-                  <div className="absolute left-[40px] -top-[1px] w-[2px] h-5 bg-[#2A374E]" />
-                  {/* Branch tick 2 */}
-                  <div className="absolute left-1/2 -translate-x-1/2 -top-[1px] w-[2px] h-5 bg-[#2A374E]" />
-                  {/* Branch tick 3 */}
-                  <div className="absolute right-[40px] -top-[1px] w-[2px] h-5 bg-[#2A374E]" />
-                </div>
+                {/* Glow Filter */}
+                <filter id="blueGlow" x="-20%" y="-20%" width="140%" height="140%">
+                  <feGaussianBlur stdDeviation="6" result="blur" />
+                  <feComposite in="SourceGraphic" in2="blur" operator="over" />
+                </filter>
+              </defs>
 
-                {/* 2. DIRECT PARTNERS ROW: 3 Green Nodes */}
-                <div className="grid grid-cols-3 gap-6 w-full max-w-[620px] pt-1">
-                  {branches.map((partner, branchIdx) => {
-                    const isFilled = partner !== null;
+              {/* ════ LEVEL 0 -> LEVEL 1 CONNECTING LINES (LEADER -> 3 DIRECTS) ════ */}
+              <line x1="450" y1="95" x2="450" y2="130" stroke="#3B82F6" strokeWidth="3" strokeLinecap="round" />
+              <line x1="160" y1="130" x2="740" y2="130" stroke="#3B82F6" strokeWidth="3" strokeLinecap="round" />
+              <line x1="160" y1="130" x2="160" y2="162" stroke="#10B981" strokeWidth="3" strokeLinecap="round" />
+              <line x1="450" y1="130" x2="450" y2="162" stroke="#10B981" strokeWidth="3" strokeLinecap="round" />
+              <line x1="740" y1="130" x2="740" y2="162" stroke="#10B981" strokeWidth="3" strokeLinecap="round" />
 
-                    return (
-                      <div key={branchIdx} className="flex flex-col items-center space-y-6">
-                        {/* Partner Node (Green) */}
-                        <div
-                          onClick={() => partner && setSelectedMember(partner)}
-                          className={`flex flex-col items-center group ${isFilled ? 'cursor-pointer' : ''}`}
-                        >
-                          <div className="relative">
-                            <div
-                              className={`w-16 h-16 rounded-full flex flex-col items-center justify-center font-mono font-bold transition-all ${
-                                isFilled
-                                  ? 'bg-gradient-to-br from-emerald-400 via-emerald-600 to-emerald-800 border-4 border-emerald-300 shadow-[0_0_20px_rgba(16,185,129,0.45)] text-white group-hover:scale-105'
-                                  : 'bg-[#121721] border-2 border-dashed border-[#232D3F] text-[#4A5568]'
-                              }`}
-                            >
-                              {isFilled ? (
-                                <>
-                                  <Users className="w-4 h-4 mb-0.5 text-emerald-200" />
-                                  <span className="text-xs font-black">#{partner.id}</span>
-                                </>
-                              ) : (
-                                <span className="text-[10px] text-[#4A5568]">Spot {branchIdx + 1}</span>
-                              )}
-                            </div>
-                            <span
-                              className={`absolute -bottom-1 left-1/2 -translate-x-1/2 px-1.5 py-0.2 rounded-full text-[8px] font-bold uppercase font-mono tracking-wider ${
-                                isFilled
-                                  ? 'bg-emerald-600 text-white border border-emerald-300'
-                                  : 'bg-[#192230] text-[#6E7681]'
-                              }`}
-                            >
-                              Direct {branchIdx + 1}
-                            </span>
-                          </div>
+              {/* ════ LEVEL 1 -> LEVEL 2 CONNECTING LINES (3 DIRECTS -> 9 DOWNLINES) ════ */}
+              {/* Branch 1 Droplines */}
+              <line x1="160" y1="228" x2="160" y2="265" stroke="#10B981" strokeWidth="2.5" strokeLinecap="round" />
+              <line x1="80" y1="265" x2="240" y2="265" stroke="#06B6D4" strokeWidth="2.5" strokeLinecap="round" />
+              <line x1="80" y1="265" x2="80" y2="318" stroke="#06B6D4" strokeWidth="2.5" strokeLinecap="round" />
+              <line x1="160" y1="265" x2="160" y2="318" stroke="#06B6D4" strokeWidth="2.5" strokeLinecap="round" />
+              <line x1="240" y1="265" x2="240" y2="318" stroke="#06B6D4" strokeWidth="2.5" strokeLinecap="round" />
 
-                          <div className="mt-2 text-center">
-                            {isFilled ? (
-                              <>
-                                <div className="text-[11px] font-bold text-white font-mono">
-                                  {formatAddress(partner.wallet)}
-                                </div>
-                                <div className="text-[9px] text-emerald-400 font-mono">
-                                  L{partner.maxActiveSlot} • {partner.directSubCount || 0} downlines
-                                </div>
-                              </>
-                            ) : (
-                              <div className="text-[10px] text-[#6E7681] italic">
-                                Open Direct Spot
-                              </div>
-                            )}
-                          </div>
-                        </div>
+              {/* Branch 2 Droplines */}
+              <line x1="450" y1="228" x2="450" y2="265" stroke="#10B981" strokeWidth="2.5" strokeLinecap="round" />
+              <line x1="370" y1="265" x2="530" y2="265" stroke="#06B6D4" strokeWidth="2.5" strokeLinecap="round" />
+              <line x1="370" y1="265" x2="370" y2="318" stroke="#06B6D4" strokeWidth="2.5" strokeLinecap="round" />
+              <line x1="450" y1="265" x2="450" y2="318" stroke="#06B6D4" strokeWidth="2.5" strokeLinecap="round" />
+              <line x1="530" y1="265" x2="530" y2="318" stroke="#06B6D4" strokeWidth="2.5" strokeLinecap="round" />
 
-                        {/* Vertical line down to sub-downlines */}
-                        <div className="w-[2px] h-4 bg-[#232D3F]" />
+              {/* Branch 3 Droplines */}
+              <line x1="740" y1="228" x2="740" y2="265" stroke="#10B981" strokeWidth="2.5" strokeLinecap="round" />
+              <line x1="660" y1="265" x2="820" y2="265" stroke="#06B6D4" strokeWidth="2.5" strokeLinecap="round" />
+              <line x1="660" y1="265" x2="660" y2="318" stroke="#06B6D4" strokeWidth="2.5" strokeLinecap="round" />
+              <line x1="740" y1="265" x2="740" y2="318" stroke="#06B6D4" strokeWidth="2.5" strokeLinecap="round" />
+              <line x1="820" y1="265" x2="820" y2="318" stroke="#06B6D4" strokeWidth="2.5" strokeLinecap="round" />
 
-                        {/* Horizontal connector for 3 sub-nodes under this partner */}
-                        <div className="relative w-[150px] h-[2px] bg-[#232D3F]">
-                          <div className="absolute left-[15px] -top-[1px] w-[2px] h-3 bg-[#232D3F]" />
-                          <div className="absolute left-1/2 -translate-x-1/2 -top-[1px] w-[2px] h-3 bg-[#232D3F]" />
-                          <div className="absolute right-[15px] -top-[1px] w-[2px] h-3 bg-[#232D3F]" />
-                        </div>
+              {/* ════ LEVEL 0: ROOT LEADER NODE (cx: 450, cy: 55) ════ */}
+              <g
+                className="cursor-pointer"
+                onClick={() =>
+                  setSelectedMember({
+                    id: rootMember.id,
+                    wallet: rootMember.wallet,
+                    level: 'Leader',
+                    slots: rootMember.maxActiveSlot,
+                  })
+                }
+              >
+                <circle cx="450" cy="55" r="40" fill="url(#rootGrad)" stroke="#60A5FA" strokeWidth="3" filter="url(#blueGlow)" />
+                <text x="450" y="52" fill="#FFFFFF" fontSize="13" fontWeight="900" textAnchor="middle" fontFamily="monospace">
+                  YOU
+                </text>
+                <text x="450" y="68" fill="#93C5FD" fontSize="11" fontWeight="700" textAnchor="middle" fontFamily="monospace">
+                  ID #{rootMember.id}
+                </text>
+              </g>
 
-                        {/* 3. SUB-DOWNLINES: 3 Cyan Nodes per partner */}
-                        <div className="grid grid-cols-3 gap-2 w-full pt-1">
-                          {[0, 1, 2].map((subIdx) => {
-                            const sub = partner?.subDownlines?.[subIdx] || null;
-                            const isSubFilled = sub !== null;
+              {/* ════ LEVEL 1: 3 DIRECT PARTNER NODES (cy: 195) ════ */}
+              {/* Direct 1 (cx: 160) */}
+              <g
+                className="cursor-pointer"
+                onClick={() =>
+                  b1 &&
+                  setSelectedMember({
+                    id: b1.id,
+                    wallet: b1.wallet,
+                    level: 'Line 1 (50%)',
+                    slots: b1.maxActiveSlot,
+                  })
+                }
+              >
+                <circle
+                  cx="160"
+                  cy="195"
+                  r="32"
+                  fill={b1 ? 'url(#dirGrad)' : 'url(#emptyGrad)'}
+                  stroke={b1 ? '#34D399' : '#1E293B'}
+                  strokeWidth="2.5"
+                  strokeDasharray={b1 ? 'none' : '4 3'}
+                />
+                <text x="160" y="193" fill="#FFFFFF" fontSize="11" fontWeight="800" textAnchor="middle" fontFamily="monospace">
+                  {b1 ? `ID #${b1.id}` : '#1'}
+                </text>
+                <text x="160" y="207" fill={b1 ? '#A7F3D0' : '#64748B'} fontSize="9" fontWeight="700" textAnchor="middle" fontFamily="monospace">
+                  {b1 ? 'DIRECT' : 'OPEN'}
+                </text>
+              </g>
 
-                            return (
-                              <div
-                                key={subIdx}
-                                onClick={() => sub && setSelectedMember(sub)}
-                                className={`flex flex-col items-center ${isSubFilled ? 'cursor-pointer group' : ''}`}
-                                title={isSubFilled ? `Member #${sub.id} (${sub.wallet})` : 'Open Downline Spot'}
-                              >
-                                <div
-                                  className={`w-9 h-9 rounded-full flex items-center justify-center font-mono text-[10px] font-bold transition-all ${
-                                    isSubFilled
-                                      ? 'bg-gradient-to-br from-cyan-400 via-sky-600 to-blue-700 border-2 border-cyan-300 text-black shadow-[0_0_12px_rgba(6,182,212,0.4)] group-hover:scale-110'
-                                      : 'bg-[#0E131C] border border-dashed border-[#1E2736] text-[#364153]'
-                                  }`}
-                                >
-                                  {isSubFilled ? `#${sub.id}` : ''}
-                                </div>
-                                <span className="text-[8px] font-mono text-[#6E7681] mt-1">
-                                  {isSubFilled ? formatAddress(sub.wallet, 2) : '•'}
-                                </span>
-                              </div>
-                            );
-                          })}
-                        </div>
-                      </div>
-                    );
-                  })}
-                </div>
-              </div>
-            </div>
+              {/* Direct 2 (cx: 450) */}
+              <g
+                className="cursor-pointer"
+                onClick={() =>
+                  b2 &&
+                  setSelectedMember({
+                    id: b2.id,
+                    wallet: b2.wallet,
+                    level: 'Line 1 (50%)',
+                    slots: b2.maxActiveSlot,
+                  })
+                }
+              >
+                <circle
+                  cx="450"
+                  cy="195"
+                  r="32"
+                  fill={b2 ? 'url(#dirGrad)' : 'url(#emptyGrad)'}
+                  stroke={b2 ? '#34D399' : '#1E293B'}
+                  strokeWidth="2.5"
+                  strokeDasharray={b2 ? 'none' : '4 3'}
+                />
+                <text x="450" y="193" fill="#FFFFFF" fontSize="11" fontWeight="800" textAnchor="middle" fontFamily="monospace">
+                  {b2 ? `ID #${b2.id}` : '#2'}
+                </text>
+                <text x="450" y="207" fill={b2 ? '#A7F3D0' : '#64748B'} fontSize="9" fontWeight="700" textAnchor="middle" fontFamily="monospace">
+                  {b2 ? 'DIRECT' : 'OPEN'}
+                </text>
+              </g>
 
-            {/* Selected Member Details Inspector Card */}
-            {selectedMember && (
-              <div className="p-4 rounded-2xl bg-[#0B0E14] border border-[#232E40] space-y-3 animate-fadeIn">
-                <div className="flex items-center justify-between pb-2 border-b border-[#1A2332]">
-                  <div className="flex items-center space-x-2">
-                    <span className="w-2.5 h-2.5 rounded-full bg-emerald-400" />
-                    <span className="text-xs font-bold text-white font-mono">
-                      Member #{selectedMember.id} Profile
-                    </span>
-                  </div>
-                  <button
-                    onClick={() => setSelectedMember(null)}
-                    className="text-[#6E7681] hover:text-white text-xs font-mono cursor-pointer"
+              {/* Direct 3 (cx: 740) */}
+              <g
+                className="cursor-pointer"
+                onClick={() =>
+                  b3 &&
+                  setSelectedMember({
+                    id: b3.id,
+                    wallet: b3.wallet,
+                    level: 'Line 1 (50%)',
+                    slots: b3.maxActiveSlot,
+                  })
+                }
+              >
+                <circle
+                  cx="740"
+                  cy="195"
+                  r="32"
+                  fill={b3 ? 'url(#dirGrad)' : 'url(#emptyGrad)'}
+                  stroke={b3 ? '#34D399' : '#1E293B'}
+                  strokeWidth="2.5"
+                  strokeDasharray={b3 ? 'none' : '4 3'}
+                />
+                <text x="740" y="193" fill="#FFFFFF" fontSize="11" fontWeight="800" textAnchor="middle" fontFamily="monospace">
+                  {b3 ? `ID #${b3.id}` : '#3'}
+                </text>
+                <text x="740" y="207" fill={b3 ? '#A7F3D0' : '#64748B'} fontSize="9" fontWeight="700" textAnchor="middle" fontFamily="monospace">
+                  {b3 ? 'DIRECT' : 'OPEN'}
+                </text>
+              </g>
+
+              {/* ════ LEVEL 2: 9 DOWNLINE NODES (cy: 340) ════ */}
+              {[
+                { x: 80, parent: b1, idx: 0 },
+                { x: 160, parent: b1, idx: 1 },
+                { x: 240, parent: b1, idx: 2 },
+                { x: 370, parent: b2, idx: 0 },
+                { x: 450, parent: b2, idx: 1 },
+                { x: 530, parent: b2, idx: 2 },
+                { x: 660, parent: b3, idx: 0 },
+                { x: 740, parent: b3, idx: 1 },
+                { x: 820, parent: b3, idx: 2 },
+              ].map((pos, dIdx) => {
+                const sub = pos.parent?.subDownlines?.[pos.idx] || null;
+
+                return (
+                  <g
+                    key={dIdx}
+                    className="cursor-pointer"
+                    onClick={() =>
+                      sub &&
+                      setSelectedMember({
+                        id: sub.id,
+                        wallet: sub.wallet,
+                        level: 'Line 2 (30%)',
+                        slots: sub.maxActiveSlot || 1,
+                      })
+                    }
                   >
-                    ✕ Close
+                    <circle
+                      cx={pos.x}
+                      cy="340"
+                      r="22"
+                      fill={sub ? 'url(#downGrad)' : 'url(#emptyGrad)'}
+                      stroke={sub ? '#22D3EE' : '#1E293B'}
+                      strokeWidth="2"
+                      strokeDasharray={sub ? 'none' : '3 2'}
+                    />
+                    <text x={pos.x} y="344" fill={sub ? '#FFFFFF' : '#64748B'} fontSize="9" fontWeight="700" textAnchor="middle" fontFamily="monospace">
+                      {sub ? `#${sub.id}` : `L2`}
+                    </text>
+                  </g>
+                );
+              })}
+            </svg>
+          </div>
+        </div>
+
+        {/* Selected Member Detail Drawer */}
+        {selectedMember && (
+          <div className="mx-6 mb-6 p-4 rounded-2xl bg-[#141B28] border border-blue-500/40 flex flex-col sm:flex-row sm:items-center justify-between gap-3 animate-fadeIn">
+            <div className="flex items-center space-x-3">
+              <div className="w-10 h-10 rounded-xl bg-blue-600/20 text-blue-400 border border-blue-500/30 flex items-center justify-center font-mono font-bold text-xs">
+                #{selectedMember.id}
+              </div>
+              <div className="space-y-0.5">
+                <div className="flex items-center space-x-2">
+                  <span className="text-xs font-bold text-white">
+                    Member #{selectedMember.id}
+                  </span>
+                  <span className="text-[10px] font-mono px-2 py-0.5 rounded-full bg-emerald-500/15 text-emerald-400 border border-emerald-500/30">
+                    {selectedMember.level}
+                  </span>
+                </div>
+                <div className="flex items-center space-x-1.5 text-xs font-mono text-[#8B949E]">
+                  <span>{formatAddress(selectedMember.wallet)}</span>
+                  <button
+                    onClick={() => copyAddress(selectedMember.wallet)}
+                    className="hover:text-white cursor-pointer"
+                  >
+                    {copiedWallet === selectedMember.wallet ? (
+                      <Check className="w-3 h-3 text-emerald-400" />
+                    ) : (
+                      <Copy className="w-3 h-3" />
+                    )}
                   </button>
-                </div>
-
-                <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 text-xs font-mono">
-                  <div className="p-2.5 rounded-xl bg-[#11161E] border border-[#1E2533]">
-                    <span className="text-[10px] text-[#8B949E] block">Solana Address</span>
-                    <div className="flex items-center space-x-1.5 mt-0.5">
-                      <span className="text-white font-bold">{formatAddress(selectedMember.wallet, 6)}</span>
-                      <button
-                        onClick={() => copyAddress(selectedMember.wallet)}
-                        className="text-[#8B949E] hover:text-white cursor-pointer"
-                        title="Copy address"
-                      >
-                        {copiedWallet === selectedMember.wallet ? (
-                          <Check className="w-3.5 h-3.5 text-emerald-400" />
-                        ) : (
-                          <Copy className="w-3.5 h-3.5" />
-                        )}
-                      </button>
-                    </div>
-                  </div>
-
-                  <div className="p-2.5 rounded-xl bg-[#11161E] border border-[#1E2533]">
-                    <span className="text-[10px] text-[#8B949E] block">Active Independent Slots</span>
-                    <span className="text-emerald-400 font-bold block mt-0.5">
-                      {selectedMember.activeLevels.join(', ')} ({selectedMember.activeLevels.length} active)
-                    </span>
-                  </div>
-
-                  <div className="p-2.5 rounded-xl bg-[#11161E] border border-[#1E2533]">
-                    <span className="text-[10px] text-[#8B949E] block">Direct Downline Partners</span>
-                    <span className="text-[#F5A623] font-bold block mt-0.5">
-                      {selectedMember.directSubCount || selectedMember.subDownlines?.length || 0} Partners
-                    </span>
-                  </div>
-                </div>
-
-                <div className="flex items-center justify-between pt-1">
                   <a
-                    href={getExplorerUrl(selectedMember.wallet, 'address', config.network)}
+                    href={getExplorerUrl(selectedMember.wallet, 'address', 'mainnet-beta')}
                     target="_blank"
                     rel="noreferrer"
-                    className="text-[11px] font-mono text-cyan-400 hover:underline flex items-center space-x-1"
+                    className="hover:text-blue-400 transition-colors"
                   >
-                    <span>View on Solana Explorer</span>
                     <ExternalLink className="w-3 h-3" />
                   </a>
-
-                  {onPreviewMemberId && (
-                    <button
-                      onClick={() => onPreviewMemberId(selectedMember.id)}
-                      className="px-3 py-1.5 rounded-xl bg-blue-600 hover:bg-blue-500 text-white text-xs font-bold font-mono transition-colors cursor-pointer flex items-center space-x-1"
-                    >
-                      <span>Preview Member #{selectedMember.id} Matrix</span>
-                      <ChevronRight className="w-3.5 h-3.5" />
-                    </button>
-                  )}
                 </div>
               </div>
-            )}
+            </div>
+
+            <div className="flex items-center space-x-2">
+              {onPreviewMemberId && (
+                <button
+                  onClick={() => onPreviewMemberId(selectedMember.id)}
+                  className="px-3.5 py-1.5 rounded-xl bg-blue-600 hover:bg-blue-500 text-white font-bold text-xs cursor-pointer transition-colors shadow-sm"
+                >
+                  Inspect Matrix
+                </button>
+              )}
+              <button
+                onClick={() => setSelectedMember(null)}
+                className="px-3 py-1.5 rounded-xl bg-[#1B2434] hover:bg-[#253246] text-white text-xs font-mono cursor-pointer"
+              >
+                ✕
+              </button>
+            </div>
           </div>
         )}
-      </div>
-
-      {/* 12-Slot Table Quick Matrix Specs */}
-      <div className="p-6 rounded-3xl bg-[#0F141E] border border-[#1E2738] space-y-4">
-        <div className="flex items-center justify-between pb-3 border-b border-[#1A2332]">
-          <div className="flex items-center space-x-2">
-            <Layers className="w-4 h-4 text-[#F5A623]" />
-            <h3 className="text-sm font-bold text-white uppercase tracking-wider font-mono">
-              12 Independent Slots — Opportunity &amp; Capacity Specifications
-            </h3>
-          </div>
-          {onNavigateToSlots && (
-            <button
-              onClick={onNavigateToSlots}
-              className="text-xs font-mono text-[#F5A623] hover:underline flex items-center space-x-1 cursor-pointer"
-            >
-              <span>Explore Slots Matrix</span>
-              <ChevronRight className="w-3.5 h-3.5" />
-            </button>
-          )}
-        </div>
-
-        <div className="overflow-x-auto">
-          <table className="w-full text-left text-xs font-mono">
-            <thead>
-              <tr className="border-b border-[#1A2332] text-[#8B949E]">
-                <th className="py-2.5 px-3">Slot Number</th>
-                <th className="py-2.5 px-3">Package Fee</th>
-                <th className="py-2.5 px-3">Direct Spots</th>
-                <th className="py-2.5 px-3">Recycling Spots</th>
-                <th className="py-2.5 px-3">Total Capacity</th>
-                <th className="py-2.5 px-3 text-right">Recycling Distribution</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-[#151D2A]">
-              {MATRIX_SLOTS_CONFIG.map((s) => (
-                <tr key={s.slot} className="hover:bg-[#131A26] transition-colors">
-                  <td className="py-2 px-3 font-bold text-white">
-                    SLOT {s.slot < 10 ? `0${s.slot}` : s.slot}
-                  </td>
-                  <td className="py-2 px-3 font-extrabold text-[#F5A623]">
-                    {s.totalPackageFee.toLocaleString()} AIQX
-                  </td>
-                  <td className="py-2 px-3 text-emerald-400 font-bold">
-                    {s.directSpots} Direct {s.directSpots === 1 ? 'Spot' : 'Spots'}
-                  </td>
-                  <td className="py-2 px-3 text-cyan-400 font-bold">
-                    1 Recycling (Reinvest)
-                  </td>
-                  <td className="py-2 px-3 text-white">
-                    {s.slots} Total Spots
-                  </td>
-                  <td className="py-2 px-3 text-right text-[#8B949E]">
-                    50% Upline (Crossover) • 10% Treasury • 40% Downline Leaders
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
       </div>
     </div>
   );

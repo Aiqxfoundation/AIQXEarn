@@ -15,14 +15,14 @@ import {
 } from 'lucide-react';
 import { NavigationTab } from './Header';
 
-interface ForsageSidebarProps {
+interface AiqxSidebarProps {
   activeTab: NavigationTab;
   setActiveTab: (tab: NavigationTab) => void;
   onOpenTokenGuide?: () => void;
   isRegistered?: boolean;
 }
 
-export const ForsageSidebar: FC<ForsageSidebarProps> = ({
+export const AiqxSidebar: FC<AiqxSidebarProps> = ({
   activeTab,
   setActiveTab,
   onOpenTokenGuide,

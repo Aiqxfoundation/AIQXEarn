@@ -41,7 +41,7 @@ interface HeaderProps {
   aiqxBalance?: number;
   solBalance?: number;
   onOpenTokenGuide?: () => void;
-  // Forsage Preview ID controls
+  // AIQX Matrix Preview ID controls
   previewIdInput: string;
   setPreviewIdInput: (val: string) => void;
   onPreviewSubmit: (id: string) => void;
@@ -119,62 +119,52 @@ export const Header: FC<HeaderProps> = ({
     }
   };
 
-  // Navigation Menu: Slots, Total Team Picture, DEX, and Docs
   const navMenuItems = [
     {
       id: 'dashboard' as NavigationTab,
       label: 'Slots',
-      description: '12 Independent Slots, Matrix Cycles & Profits',
       icon: Activity,
-      badge: '12 Slots',
     },
     {
       id: 'team-picture' as NavigationTab,
       label: 'Team Picture',
-      description: 'Full Picture of Total Team Topology (1 Leader → 3 Directs → 9 Downlines)',
       icon: Users,
-      badge: 'Total Team',
     },
     {
       id: 'terminal' as NavigationTab,
       label: 'DEX',
-      description: 'Live AMM Swap Terminal & Raydium Candlesticks',
       icon: ArrowDownUp,
-      badge: 'Live',
     },
     {
       id: 'docs' as NavigationTab,
       label: 'Docs',
-      description: 'Protocol Manifesto, 12-Slot Math, Audit & Rules',
       icon: BookOpen,
-      badge: 'Rules',
     },
   ];
 
   return (
     <>
-      {/* Forsage Dark Top Bar with Sleek Pills Matching Reference Screenshot */}
-      <header className="sticky top-0 z-40 w-full bg-[#0E121A] border-b border-[#1E2533] shadow-md">
+      {/* AIQX Matrix Fixed Top Bar - Clean, Non-Scrolling, Zero Jitter */}
+      <header className="sticky top-0 z-40 w-full bg-[#0E121A] border-b border-[#1E2533] shadow-md select-none">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between gap-3">
-          {/* Left: Brand Emblem + Desktop Navigation Buttons */}
+          {/* Left: Exact Brand Logo + Desktop Navigation Buttons */}
           <div className="flex items-center space-x-3 sm:space-x-5 shrink-0">
             <button
               onClick={() => handleNavClick('dashboard')}
-              className="flex items-center space-x-2 focus:outline-none group cursor-pointer"
+              className="flex items-center space-x-2.5 focus:outline-none group cursor-pointer shrink-0"
+              title="AIQX Foundation"
             >
-              <div className="w-8 h-8 rounded-full p-0.5 bg-blue-600/30 border border-blue-500/40 group-hover:scale-105 transition-transform flex items-center justify-center shrink-0 shadow-[0_0_12px_rgba(37,99,235,0.3)]">
-                <img
-                  src="/aiqx-logo.png"
-                  alt="AIQX Emblem"
-                  className="w-full h-full rounded-full object-cover bg-black"
-                />
-              </div>
-              <span className="font-black text-lg text-white tracking-tight">
+              <img
+                src="/aiqx-logo.png"
+                alt="AIQX Logo"
+                className="w-8 h-8 rounded-full object-cover shrink-0 shadow-sm"
+              />
+              <span className="font-extrabold text-lg text-white tracking-tight">
                 AIQX
               </span>
             </button>
 
-            {/* Desktop Quick Nav: Slots | Team Picture | DEX | Docs */}
+            {/* Desktop Navigation: Slots | Team Picture | DEX | Docs */}
             <nav className="hidden lg:flex items-center space-x-1 bg-[#141926] p-1 rounded-2xl border border-[#1E273A]">
               {navMenuItems.map((item) => {
                 const isActive = activeTab === item.id;
@@ -197,33 +187,21 @@ export const Header: FC<HeaderProps> = ({
             </nav>
           </div>
 
-          {/* Right Action: Network Pill, Balance Pill, SOL Pill, Wallet Pill, Search & Icons */}
-          <div className="flex items-center space-x-2 sm:space-x-2.5 overflow-x-auto no-scrollbar py-1">
-            {/* 1. Network Pill: Solana Mainnet (matches "Smart Chain" pill in reference image) */}
-            <div className="hidden sm:flex items-center space-x-2 px-3 py-1.5 rounded-2xl bg-[#141926] border border-[#1E273A] text-xs font-medium text-white shadow-sm shrink-0">
+          {/* Right Action: Clean non-scrolling container
+              - On Desktop: Solana Pill + SOL Balance Pill + Search + Connect Wallet
+              - On Mobile: Search + Menu Lines (Connect Wallet is inside the Menu Drawer at the top) */}
+          <div className="flex items-center space-x-2 sm:space-x-2.5 shrink-0">
+            {/* 1. Network Pill: Solana Mainnet (visible on lg+) */}
+            <div className="hidden lg:flex items-center space-x-2 px-3 py-1.5 rounded-2xl bg-[#141926] border border-[#1E273A] text-xs font-medium text-white shadow-sm shrink-0">
               <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse shrink-0" />
               <SolanaLogo className="w-3.5 h-3.5 text-blue-400" />
               <span className="font-semibold text-white text-[11px] sm:text-xs">Solana</span>
             </div>
 
-            {/* 2. AIQX Token Balance Pill (matches "298.30 BUSD" pill in reference image) */}
-            <div
-              title="Your AIQX Token Balance"
-              className="flex items-center space-x-1.5 px-2.5 sm:px-3 py-1.5 rounded-2xl bg-[#141926] border border-[#1E273A] text-xs font-mono text-white shadow-sm shrink-0"
-            >
-              <div className="w-4 h-4 rounded-full bg-amber-400/20 border border-amber-400/50 flex items-center justify-center text-[9px] font-black text-amber-300 shrink-0">
-                AI
-              </div>
-              <span className="font-black text-white text-[11px] sm:text-xs">
-                {aiqxBalance.toLocaleString(undefined, { maximumFractionDigits: 1 })}{' '}
-                <span className="text-[#8B949E] text-[10px] font-sans">AIQX</span>
-              </span>
-            </div>
-
-            {/* 3. SOL Native Balance Pill (matches "0.074 BNB" pill in reference image) */}
+            {/* 2. SOL Native Balance Pill (visible on lg+) */}
             <div
               title="Your SOL Balance"
-              className="hidden md:flex items-center space-x-1.5 px-3 py-1.5 rounded-2xl bg-[#141926] border border-[#1E273A] text-xs font-mono text-white shadow-sm shrink-0"
+              className="hidden lg:flex items-center space-x-1.5 px-3 py-1.5 rounded-2xl bg-[#141926] border border-[#1E273A] text-xs font-mono text-white shadow-sm shrink-0"
             >
               <div className="w-3.5 h-3.5 rounded-full bg-gradient-to-tr from-purple-500 to-cyan-400 flex items-center justify-center text-[8px] font-black text-white shrink-0">
                 S
@@ -234,12 +212,7 @@ export const Header: FC<HeaderProps> = ({
               </span>
             </div>
 
-            {/* 4. Wallet Button / Connected Pill (matches "0xce...F5" in reference image) */}
-            <div className="wallet-btn-custom shrink-0">
-              <WalletMultiButton className="!bg-[#141926] !text-white !font-bold hover:!bg-[#1D2436] !h-9 !px-3 !rounded-2xl !text-xs !shadow-sm !border !border-[#1E273A]" />
-            </div>
-
-            {/* 5. Search Button for Preview ID (matches search icon in reference image) */}
+            {/* 3. Search Button for Member Preview ID */}
             <button
               onClick={() => setShowSearchModal((prev) => !prev)}
               className={`p-2 rounded-2xl border transition-colors cursor-pointer shrink-0 ${
@@ -252,25 +225,21 @@ export const Header: FC<HeaderProps> = ({
               <Search className="w-4 h-4" />
             </button>
 
-            {/* 6. Exit Preview pill button if in preview mode */}
-            {isPreviewMode && (
-              <button
-                onClick={onClearPreview}
-                className="px-2.5 py-1.5 rounded-2xl bg-amber-500/20 hover:bg-amber-500/30 text-amber-300 font-mono text-xs flex items-center space-x-1 cursor-pointer transition-colors border border-amber-500/40 shrink-0"
-                title="Exit Preview Mode"
-              >
-                <span>Exit Preview</span>
-                <X className="w-3.5 h-3.5" />
-              </button>
-            )}
+            {/* 4. Desktop Connect Wallet Button (Hidden on Mobile, placed cleanly at right edge) */}
+            <div className="hidden lg:block wallet-btn-custom shrink-0">
+              <WalletMultiButton className="!bg-gradient-to-r !from-blue-600 !to-indigo-600 hover:!from-blue-500 hover:!to-indigo-500 !text-white !font-bold !h-9 !px-4 !rounded-2xl !text-xs !shadow-md !shadow-blue-600/30 !border !border-blue-400/40 cursor-pointer" />
+            </div>
 
-            {/* 7. Mobile Hamburger Menu */}
+            {/* 5. Mobile Menu Lines (Hamburger) */}
             <button
               onClick={() => setIsMenuOpen(true)}
-              className="lg:hidden p-2 rounded-2xl bg-[#141926] hover:bg-[#1D2436] text-white border border-[#1E273A] cursor-pointer transition-colors shrink-0"
+              className="lg:hidden flex flex-col justify-center items-center w-9 h-9 rounded-2xl bg-[#141926] hover:bg-[#1E2538] border border-[#1E273A] transition-all cursor-pointer space-y-1 shrink-0 shadow-sm p-2"
               aria-label="Open Navigation Menu"
+              title="Menu"
             >
-              <Menu className="w-4 h-4 text-white" />
+              <span className="w-4 h-0.5 bg-white/90 rounded-full" />
+              <span className="w-4 h-0.5 bg-white/90 rounded-full" />
+              <span className="w-4 h-0.5 bg-white/90 rounded-full" />
             </button>
           </div>
         </div>
@@ -325,21 +294,19 @@ export const Header: FC<HeaderProps> = ({
             {/* Drawer Header */}
             <div className="p-4 sm:p-5 border-b border-[#1E2533] flex items-center justify-between bg-[#11161E]">
               <div className="flex items-center space-x-3">
-                <div className="w-8 h-8 rounded-full p-0.5 bg-blue-600 flex items-center justify-center">
-                  <img
-                    src="/aiqx-logo.png"
-                    alt="AIQX Emblem"
-                    className="w-full h-full rounded-full object-cover bg-black"
-                  />
-                </div>
+                <img
+                  src="/aiqx-logo.png"
+                  alt="AIQX Logo"
+                  className="w-8 h-8 rounded-full object-cover shrink-0 shadow-sm"
+                />
                 <div>
                   <div className="flex items-center space-x-1.5">
-                    <span className="font-extrabold text-sm text-white">AIQX Matrix X</span>
+                    <span className="font-extrabold text-sm text-white">AIQX Matrix</span>
                     <span className="px-1.5 py-0.5 rounded text-[10px] font-mono bg-blue-600/20 text-blue-400 border border-blue-500/30">
-                      14 Levels
+                      12 Slots
                     </span>
                   </div>
-                  <span className="text-[11px] text-[#8B949E] block">Forsage-Style Slot System</span>
+                  <span className="text-[11px] text-[#8B949E] block">Pure Solana Matrix</span>
                 </div>
               </div>
 
@@ -350,6 +317,28 @@ export const Header: FC<HeaderProps> = ({
               >
                 <X className="w-5 h-5" />
               </button>
+            </div>
+
+            {/* Connect Wallet Button At Top Of Menu Drawer */}
+            <div className="p-4 border-b border-[#1E2533] bg-[#11161E]/70 space-y-3">
+              <div className="text-[10px] font-mono font-bold uppercase tracking-wider text-[#6E7681]">
+                Wallet Connection
+              </div>
+              <div className="wallet-btn-custom w-full flex justify-center">
+                <WalletMultiButton className="!w-full !justify-center !bg-gradient-to-r !from-blue-600 !to-indigo-600 hover:!from-blue-500 hover:!to-indigo-500 !text-white !font-bold !h-11 !px-4 !rounded-xl !text-sm !shadow-md !shadow-blue-600/30 !border !border-blue-400/40 cursor-pointer" />
+              </div>
+
+              {/* Solana Network & Native SOL Balance Indicator inside menu */}
+              <div className="flex items-center justify-between pt-1 text-xs">
+                <div className="flex items-center space-x-1.5 text-[#8B949E]">
+                  <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse shrink-0" />
+                  <SolanaLogo className="w-3.5 h-3.5 text-blue-400 shrink-0" />
+                  <span className="font-medium text-white text-[11px]">Solana Mainnet</span>
+                </div>
+                <div className="font-mono text-xs font-bold text-white bg-[#141926] px-2.5 py-1 rounded-lg border border-[#1E273A]">
+                  {solBalance.toFixed(3)} <span className="text-[#8B949E] text-[10px] font-sans">SOL</span>
+                </div>
+              </div>
             </div>
 
             {/* Menu Items - Strictly Dashboard, DEX, Docs only */}
@@ -376,18 +365,8 @@ export const Header: FC<HeaderProps> = ({
                           isActive ? 'text-blue-400' : 'text-[#6E7681]'
                         }`}
                       />
-                      <div>
-                        <div className="text-xs font-bold">{item.label}</div>
-                        <div className="text-[11px] text-[#6E7681] truncate max-w-[200px]">
-                          {item.description}
-                        </div>
-                      </div>
+                      <span className="text-sm font-bold text-white">{item.label}</span>
                     </div>
-                    {item.badge && (
-                      <span className="px-1.5 py-0.5 rounded text-[9px] font-mono bg-[#1E2533] text-[#8B949E]">
-                        {item.badge}
-                      </span>
-                    )}
                   </button>
                 );
               })}
