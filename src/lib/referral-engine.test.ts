@@ -63,8 +63,8 @@ test('Mechanism 1: Initial Joining when upline 2 & 3 missing - Treasury still ge
   assert.equal(dist.totalAmount, 100);
 });
 
-test('12-Slot Independent System Math Table Verification', () => {
-  assert.equal(MATRIX_LEVELS_CONFIG.length, 12);
+test('5-Slot Independent System Math Table Verification', () => {
+  assert.equal(MATRIX_LEVELS_CONFIG.length, 5);
 
   // Slot 1: 3 spots total (2 direct + 1 recycling), Package Fee: 100 AIQX
   const s1 = getMatrixLevelConfig(1);
@@ -80,50 +80,57 @@ test('12-Slot Independent System Math Table Verification', () => {
   assert.equal(s2.recyclingSpots, 1);
   assert.equal(s2.totalPackageFee, 200);
 
-  // Slot 3: 5 spots total (4 direct + 1 recycling), Package Fee: 400 AIQX
+  // Slot 3: 5 spots total (4 direct + 1 recycling: 3 Top + 2 Bottom), Package Fee: 400 AIQX
   const s3 = getMatrixLevelConfig(3);
   assert.equal(s3.slots, 5);
   assert.equal(s3.directSpots, 4);
   assert.equal(s3.recyclingSpots, 1);
   assert.equal(s3.totalPackageFee, 400);
 
-  // Slot 12: 9 spots total (8 direct + 1 recycling), Package Fee: 204,800 AIQX
-  const s12 = getMatrixLevelConfig(12);
-  assert.equal(s12.slots, 9);
-  assert.equal(s12.directSpots, 8);
-  assert.equal(s12.recyclingSpots, 1);
-  assert.equal(s12.totalPackageFee, 204800);
+  // Slot 4: 6 spots total (5 direct + 1 recycling: 2 Top + 4 Bottom), Package Fee: 800 AIQX
+  const s4 = getMatrixLevelConfig(4);
+  assert.equal(s4.slots, 6);
+  assert.equal(s4.directSpots, 5);
+  assert.equal(s4.recyclingSpots, 1);
+  assert.equal(s4.totalPackageFee, 800);
+
+  // Slot 5: 7 spots total (6 direct + 1 recycling: 4 Top + 3 Bottom), Package Fee: 1,600 AIQX
+  const s5 = getMatrixLevelConfig(5);
+  assert.equal(s5.slots, 7);
+  assert.equal(s5.directSpots, 6);
+  assert.equal(s5.recyclingSpots, 1);
+  assert.equal(s5.totalPackageFee, 1600);
 });
 
 test('Auto Crossover Split: Qualified vs Unqualified Uplines', () => {
-  // Scenario: Downline activates Level 6 (3,200 AIQX total package: 480 slot fee + 2,720 commission pool)
+  // Scenario: Downline activates Level 5 (1,600 AIQX total package: 240 slot fee + 1,360 commission pool)
   // Upline 1 is Level 3 (unqualified)
-  // Upline 2 is Level 6 (qualified)
-  // Upline 3 is Level 6 (qualified)
+  // Upline 2 is Level 5 (qualified)
+  // Upline 3 is Level 5 (qualified)
   const dist = calculateMatrixLevelDistribution({
-    level: 6,
+    level: 5,
     payerWallet: WALLET_NEW,
     upline1: { wallet: WALLET_L1, id: 2, activeLevels: [1, 2, 3] },
-    upline2: { wallet: WALLET_L2, id: 3, activeLevels: [1, 2, 3, 4, 5, 6] },
-    upline3: { wallet: WALLET_L3, id: 4, activeLevels: [1, 2, 3, 4, 5, 6] },
+    upline2: { wallet: WALLET_L2, id: 3, activeLevels: [1, 2, 3, 4, 5] },
+    upline3: { wallet: WALLET_L3, id: 4, activeLevels: [1, 2, 3, 4, 5] },
     treasuryWallet: TREASURY,
     rootWallet: 'Root11111111111111111111111111111111111',
   });
 
-  // Strict Treasury rule: Slot fee is strictly 480 AIQX
-  assert.equal(dist.slotActivationFee, 480);
+  // Strict Treasury rule: Slot fee is strictly 240 AIQX
+  assert.equal(dist.slotActivationFee, 240);
   assert.equal(dist.treasuryWallet, TREASURY);
 
-  // Commission pool = 1600 + 960 + 160 = 2,720 AIQX
-  // Upline 2 gets 30% = 816 AIQX
+  // Commission pool = 800 + 480 + 80 = 1,360 AIQX
+  // Upline 2 gets 30% = 408 AIQX
   const u2 = dist.recipients.find((r) => r.wallet === WALLET_L2);
   assert.ok(u2);
-  assert.equal(u2?.amount, 816);
+  assert.equal(u2?.amount, 408);
 
-  // Upline 3 gets 20% = 544 AIQX
+  // Upline 3 gets 20% = 272 AIQX
   const u3 = dist.recipients.find((r) => r.wallet === WALLET_L3);
   assert.ok(u3);
-  assert.equal(u3?.amount, 544);
+  assert.equal(u3?.amount, 272);
 
   // Remainder flows to highest qualified sponsor (WALLET_L2)
   const unallocated = dist.recipients.find((r) => r.tier === 'unallocated_reserve');

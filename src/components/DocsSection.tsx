@@ -53,7 +53,7 @@ export const DocsSection: FC<DocsSectionProps> = ({
 
   const docSections = [
     { id: 'manifesto', label: '1. Manifesto & Protocol', icon: ShieldCheck },
-    { id: 'matrix-math', label: '2. 12-Slot Independent System', icon: Layers },
+    { id: 'matrix-math', label: '2. 5-Level Matrix System', icon: Layers },
     { id: 'id-system', label: '3. Permanent Sequential IDs', icon: Users },
     { id: 'distribution', label: '4. Joining & Distribution', icon: Coins },
     { id: 'treasury', label: '5. Treasury Policy', icon: Lock },
@@ -75,7 +75,7 @@ export const DocsSection: FC<DocsSectionProps> = ({
           </div>
           <h1 className="text-2xl font-extrabold text-white tracking-tight">AIQX Knowledge Base</h1>
           <p className="text-xs text-[#8B949E]">
-            Complete institutional specifications, 14-level mathematical models, on-chain rules, and security audits.
+            Complete institutional specifications, 5-level mathematical models, on-chain rules, and security audits.
           </p>
         </div>
 
@@ -180,19 +180,19 @@ export const DocsSection: FC<DocsSectionProps> = ({
                   </div>
                   <div className="p-4 rounded-xl bg-[#0B0E14] border border-[#1A2230] space-y-1">
                     <span className="text-[10px] font-mono text-[#8B949E] uppercase">Slots Program</span>
-                    <div className="text-sm font-bold text-blue-400">12 Independent Slots</div>
+                    <div className="text-sm font-bold text-blue-400">5 Independent Levels</div>
                   </div>
                 </div>
               </div>
             )}
 
-            {/* 2. 14-Level Math */}
+            {/* 2. 5-Level Math */}
             {activeDocTab === 'matrix-math' && (
               <div className="space-y-4">
                 <div className="border-b border-[#1E2533] pb-4">
-                  <h2 className="text-xl font-bold text-white">2. 12-Slot Independent Matrix Mathematics</h2>
+                  <h2 className="text-xl font-bold text-white">2. 5-Level Independent Matrix Mathematics</h2>
                   <p className="text-xs text-[#8B949E] mt-1">
-                    Pure slot-based system: No levels. Every slot is higher than before (doubling fees from 100 to 204,800 AIQX). Everyone earns under identical opportunities.
+                    Pure slot-based system: 5 Independent Levels with doubling fees (100 to 1,600 AIQX) and customized spot formations. Everyone earns under identical opportunities.
                   </p>
                 </div>
 
@@ -200,36 +200,65 @@ export const DocsSection: FC<DocsSectionProps> = ({
                   <table className="w-full text-left text-xs font-mono">
                     <thead className="bg-[#171D27] text-[#8B949E] text-[11px] uppercase border-b border-[#1E2533]">
                       <tr>
-                        <th className="py-2.5 px-3">Slot</th>
+                        <th className="py-2.5 px-3">Level</th>
+                        <th className="py-2.5 px-3">Spot Formation</th>
                         <th className="py-2.5 px-3">Direct Spots</th>
-                        <th className="py-2.5 px-3">Recycling Spots</th>
-                        <th className="py-2.5 px-3">Total Capacity</th>
+                        <th className="py-2.5 px-3">Recycle Spot</th>
+                        <th className="py-2.5 px-3">Capacity</th>
                         <th className="py-2.5 px-3">Direct Reward</th>
                         <th className="py-2.5 px-3 text-right">Package Fee</th>
                       </tr>
                     </thead>
                     <tbody className="divide-y divide-[#1A2230] text-[#E6EDF3]">
-                      {MATRIX_LEVELS_CONFIG.map((s) => (
-                        <tr key={s.slot} className="hover:bg-[#141A24]">
-                          <td className="py-2 px-3 font-bold text-blue-400">Slot {s.slot}</td>
-                          <td className="py-2 px-3 text-emerald-400 font-bold">{s.directSpots} Direct</td>
-                          <td className="py-2 px-3 text-cyan-400 font-bold">1 Recycling</td>
-                          <td className="py-2 px-3">{s.slots} Spots</td>
-                          <td className="py-2 px-3 text-emerald-400">+{s.directReward.toLocaleString()} AIQX</td>
-                          <td className="py-2 px-3 text-right font-bold text-[#F5A623]">{s.totalPackageFee.toLocaleString()} AIQX</td>
-                        </tr>
-                      ))}
+                      {MATRIX_LEVELS_CONFIG.map((s) => {
+                        const formationName =
+                          s.level === 1
+                            ? 'Horizontal Trio (3 in line)'
+                            : s.level === 2
+                            ? '2×2 Square Matrix'
+                            : s.level === 3
+                            ? '3 Top + 2 Bottom'
+                            : s.level === 4
+                            ? '2 Top + 4 Bottom'
+                            : '4 Top + 3 Bottom';
+
+                        return (
+                          <tr key={s.slot} className="hover:bg-[#141A24]">
+                            <td className="py-2 px-3 font-bold text-blue-400">Level {s.level}</td>
+                            <td className="py-2 px-3 text-[#93C5FD] font-mono text-[11px]">{formationName}</td>
+                            <td className="py-2 px-3 text-emerald-400 font-bold">{s.directSpots} Direct</td>
+                            <td className="py-2 px-3 text-cyan-400 font-bold">1 Recycle (⟳)</td>
+                            <td className="py-2 px-3">{s.slots} Spots</td>
+                            <td className="py-2 px-3 text-emerald-400">+{s.directReward.toLocaleString()} AIQX</td>
+                            <td className="py-2 px-3 text-right font-bold text-[#F5A623]">{s.totalPackageFee.toLocaleString()} AIQX</td>
+                          </tr>
+                        );
+                      })}
                     </tbody>
                   </table>
                 </div>
 
-                <div className="p-4 rounded-xl bg-[#0B0E14] border border-[#1A2332] space-y-2 text-xs text-[#8B949E]">
-                  <p>
-                    <strong className="text-white">Recycling Logic (Exact):</strong> When the final recycling spot is filled, the slot recycles: 50% to nearest qualified upline (crossover enabled), 10% to Treasury, and 40% distributed across the user’s top 3 downline leaders (20%, 12%, 8%). A fresh cycle opens of the same slot!
-                  </p>
-                  <p>
-                    <strong className="text-white">Total Team Topology:</strong> Modeled after 1 Leader → 3 Direct Partners → 9 Downline Members.
-                  </p>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-2 text-xs font-mono">
+                  <div className="p-4 rounded-xl bg-[#0B0E14] border border-[#1A2332] space-y-2">
+                    <span className="font-bold text-white uppercase text-[11px] block">Level Spot Architectures</span>
+                    <ul className="space-y-1 text-[#8B949E] text-[11px]">
+                      <li><strong className="text-white">Level 1 (100 AIQX):</strong> 3 spots — 2 Direct + 1 Recycle (Horizontal Row)</li>
+                      <li><strong className="text-white">Level 2 (200 AIQX):</strong> 4 spots — 3 Direct + 1 Recycle (2×2 Square Formation)</li>
+                      <li><strong className="text-white">Level 3 (400 AIQX):</strong> 5 spots — 4 Direct + 1 Recycle (3 Top + 2 Bottom)</li>
+                      <li><strong className="text-white">Level 4 (800 AIQX):</strong> 6 spots — 5 Direct + 1 Recycle (2 Top + 4 Bottom)</li>
+                      <li><strong className="text-white">Level 5 (1,600 AIQX):</strong> 7 spots — 6 Direct + 1 Recycle (4 Top + 3 Bottom)</li>
+                    </ul>
+                  </div>
+
+                  <div className="p-4 rounded-xl bg-[#0B0E14] border border-[#1A2332] space-y-2">
+                    <span className="font-bold text-white uppercase text-[11px] block">Recycling &amp; Upline Logic</span>
+                    <p className="text-[#8B949E] text-[11px] leading-relaxed">
+                      When the final recycling spot (⟳) is filled, the level recycles immediately: 50% to nearest qualified upline (crossover enabled), 10% to Treasury, and 40% distributed across the user’s top 3 downline leaders (20%, 12%, 8%). A fresh cycle of the same level opens instantly!
+                    </p>
+                    <p className="text-emerald-400 text-[11px] font-bold">
+                      Sponsor / Upline ID remains permanently anchored on top of all level cards.
+                    </p>
+                  </div>
                 </div>
               </div>
             )}

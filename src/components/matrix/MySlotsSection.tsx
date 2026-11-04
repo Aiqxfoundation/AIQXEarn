@@ -37,7 +37,7 @@ export const MySlotsSection: FC<MySlotsSectionProps> = ({
 }) => {
   const activeLevels = user?.activeLevels || [1];
   const maxActiveLevel = Math.max(...activeLevels, 1);
-  const nextLevel = maxActiveLevel < 14 ? maxActiveLevel + 1 : null;
+  const nextLevel = maxActiveLevel < 5 ? maxActiveLevel + 1 : null;
   const nextConfig = nextLevel ? getMatrixLevelConfig(nextLevel) : null;
 
   const [inspectingLevel, setInspectingLevel] = useState<MatrixLevelConfig | null>(null);
@@ -65,7 +65,7 @@ export const MySlotsSection: FC<MySlotsSectionProps> = ({
           <div className="flex items-center space-x-2">
             <span className="w-2.5 h-2.5 rounded-full bg-emerald-400 animate-pulse" />
             <span className="text-xs font-mono font-bold uppercase tracking-wider text-emerald-400">
-              AIQX Matrix 14-Level Architecture
+              AIQX Matrix 5-Level Architecture
             </span>
             <span className="text-xs text-[#8B949E]">|</span>
             <span className="text-xs text-[#8B949E] font-mono">
@@ -106,19 +106,19 @@ export const MySlotsSection: FC<MySlotsSectionProps> = ({
         <div className="p-4 rounded-xl bg-[#0E131C] border border-[#1A2332]">
           <span className="text-[11px] text-[#8B949E]">Current Highest Level</span>
           <p className="text-xl font-bold font-mono text-white mt-1">Level {maxActiveLevel}</p>
-          <span className="text-[10px] text-emerald-400 font-mono">{activeLevels.length} of 14 Active</span>
+          <span className="text-[10px] text-emerald-400 font-mono">{activeLevels.length} of 5 Active</span>
         </div>
         <div className="p-4 rounded-xl bg-[#0E131C] border border-[#1A2332]">
           <span className="text-[11px] text-[#8B949E]">Level 1 Slot Capacity</span>
-          <p className="text-xl font-bold font-mono text-[#F5A623] mt-1">1 Spot</p>
-          <span className="text-[10px] text-[#8B949E]">50 AIQX Direct Value</span>
+          <p className="text-xl font-bold font-mono text-[#F5A623] mt-1">3 Spots</p>
+          <span className="text-[10px] text-[#8B949E]">2 Direct + 1 Recycle</span>
         </div>
         <div className="p-4 rounded-xl bg-[#0E131C] border border-[#1A2332]">
           <span className="text-[11px] text-[#8B949E]">Next Capacity Jump</span>
           <p className="text-xl font-bold font-mono text-white mt-1">
             {nextConfig ? `${nextConfig.slots.toLocaleString()} Spots` : 'Maxed Out'}
           </p>
-          <span className="text-[10px] text-[#8B949E]">2x Doubling Rule</span>
+          <span className="text-[10px] text-[#8B949E]">Progressive Slot Scaling</span>
         </div>
         <div className="p-4 rounded-xl bg-[#0E131C] border border-[#1A2332]">
           <span className="text-[11px] text-[#8B949E]">Slot Recycling Split</span>
@@ -159,7 +159,7 @@ export const MySlotsSection: FC<MySlotsSectionProps> = ({
       <div className="space-y-3">
         <h3 className="text-sm font-bold text-white uppercase tracking-wider flex items-center space-x-2">
           <Layers className="w-4 h-4 text-[#F5A623]" />
-          <span>14-Level Matrix Slots Breakdown</span>
+          <span>5-Level Matrix Slots Breakdown</span>
         </h3>
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">

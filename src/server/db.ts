@@ -128,7 +128,7 @@ class LocalFileDatabase implements AppDatabase {
           upline3: null,
           joinTime: new Date('2025-01-01T00:00:00Z').toISOString(),
           joinSignature: 'GENESIS_BOOTSTRAP_INITIAL_SIGNATURE',
-          activeLevels: Array.from({ length: 12 }, (_, i) => i + 1),
+          activeLevels: Array.from({ length: 5 }, (_, i) => i + 1),
           slotRecords: {
             1: { level: 1, totalCapacity: 3, filledCount: 0, occupantIds: [], completedCycles: 0 },
           },

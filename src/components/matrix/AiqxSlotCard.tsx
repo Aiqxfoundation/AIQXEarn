@@ -57,7 +57,7 @@ export const AiqxSlotCard: FC<AiqxSlotCardProps> = ({
   const occupants = slotData?.occupants || [];
 
   // Determine how many preview spots to render
-  const previewLimit = Math.min(config.slots, 6);
+  const previewLimit = Math.min(config.slots, 7);
   const remainingSlots = Math.max(0, config.slots - previewLimit);
 
   const getSpotColorClass = (type?: SlotOccupant['placementType']) => {

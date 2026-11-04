@@ -13,6 +13,7 @@ import {
   Share2,
   Lock,
   Loader2,
+  Repeat,
 } from 'lucide-react';
 import { AppConfig, formatAddress, getExplorerUrl } from '../lib/solana';
 import {
@@ -691,65 +692,201 @@ export const AiqxDashboard: FC<AiqxDashboardProps> = ({
           </button>
         </div>
 
-        {/* Single Clean Matrix Program Card */}
-        <div className="p-6 rounded-2xl bg-[#11161E] border border-[#1E2533] shadow-2xl relative overflow-hidden">
-          <div className="flex flex-col md:flex-row md:items-center justify-between gap-6">
-            {/* Left: Program Name & 12 Mini Slot Tiles Matrix (2 rows of 6 squares, NO numbers inside) */}
-            <div className="space-y-4">
+        {/* Clean Matrix Program Card with 5 Distinct Level Preview Cards (Exact Image 1673642635095_2_e3b8dde4 / Forsage Style) */}
+        <div className="p-6 rounded-2xl bg-[#11161E] border border-[#1E2533] shadow-2xl space-y-5">
+          {/* Top Bar of Program: Title & Total Program Earnings */}
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-4 border-b border-[#1E2533]">
+            <div className="flex items-center space-x-3">
+              <span className="text-xl font-black text-white tracking-wide font-mono">
+                AIQX Matrix
+              </span>
+              <span className="text-xs font-mono text-[#F5A623] bg-[#F5A623]/15 px-3 py-1 rounded-xl border border-[#F5A623]/30 font-bold">
+                5 Progressive Levels
+              </span>
+            </div>
+
+            <div className="flex items-center space-x-4">
               <div className="flex items-center space-x-2">
-                <span className="text-lg font-black text-white tracking-wide">
-                  AIQX Matrix
+                <span className="text-xs font-mono text-[#8B949E]">Total Matrix:</span>
+                <span className="text-2xl font-black text-white font-mono">
+                  {earnings.totalEarnings.toLocaleString()}
                 </span>
+                <span className="text-xs font-bold text-[#F5A623] font-mono">AIQX</span>
               </div>
 
-              {/* 12 Pure Visual Slot Boxes: Colorful if Activated, Clean Muted if Not Reached Yet, No Numbers */}
-              <div className="grid grid-cols-6 gap-2 w-fit">
-                {MATRIX_SLOTS_CONFIG.map((lvl) => {
-                  const isUnlocked = activeLevels.includes(lvl.level);
-                  return (
-                    <button
-                      key={lvl.level}
-                      onClick={() => onInspectSlotLevel?.(lvl.level)}
-                      aria-label={`Slot ${lvl.level}`}
-                      title={`Slot ${lvl.level}: ${lvl.totalPackageFee.toLocaleString()} AIQX (${
-                        isUnlocked ? 'Activated & Active' : 'Not Reached Yet'
-                      })`}
-                      className={`w-9 h-7 sm:w-11 sm:h-8 rounded-lg transition-all cursor-pointer relative group ${
-                        isUnlocked
-                          ? 'bg-gradient-to-tr from-[#2563EB] via-[#3B82F6] to-[#60A5FA] border border-[#93C5FD]/50 shadow-[0_0_10px_rgba(59,130,246,0.45)] hover:scale-105'
-                          : 'bg-[#121722]/80 border border-[#1E2738] hover:border-[#2C3B54] hover:bg-[#182030] opacity-40 hover:opacity-75'
-                      }`}
-                    >
-                      {/* Clean empty box - NO numbers written inside */}
-                    </button>
-                  );
-                })}
-              </div>
+              <button
+                onClick={() => onInspectSlotLevel?.(1)}
+                className="px-5 py-2 rounded-xl bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-500 hover:to-indigo-500 text-white font-extrabold text-xs shadow-lg shadow-blue-600/30 transition-all cursor-pointer flex items-center space-x-1.5"
+              >
+                <span>Preview</span>
+                <ArrowUpRight className="w-4 h-4" />
+              </button>
             </div>
+          </div>
 
-            {/* Right: Total Earnings in Program & Preview Button */}
-            <div className="flex flex-col sm:flex-row md:flex-col items-start md:items-end justify-between gap-4">
-              <div className="text-left md:text-right">
-                <div className="flex items-center md:justify-end space-x-1.5">
-                  <span className="text-2xl sm:text-3xl font-black text-white font-mono">
-                    {earnings.totalEarnings.toLocaleString()}
-                  </span>
-                  <span className="text-sm font-bold text-[#F5A623] font-mono">AIQX</span>
-                  <ArrowUpRight className="w-5 h-5 text-[#8B949E]" />
-                </div>
-              </div>
+          {/* 5 Distinct Level Cards Grid (Levels 1-5 with 3, 4, 5, 6, 7 spots) */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-3.5">
+            {MATRIX_SLOTS_CONFIG.map((sc) => {
+              const isUnlocked = activeLevels.includes(sc.level);
+              const isNextInLine =
+                !isUnlocked && (sc.level === 1 || activeLevels.includes(sc.level - 1));
+              const membersCount = isUnlocked ? (user.id === 1 ? 45 - (sc.level - 1) * 3 : 2) : 0;
+              const recyclesCount = isUnlocked ? (user.id === 1 ? 27 - (sc.level - 1) * 2 : 1) : 0;
+              const dotsFilled = isUnlocked ? (sc.level === 1 ? 1 : Math.max(1, membersCount % sc.slots)) : 0;
 
-              {/* Action: Keep ONLY Preview Button (No upgrade price or 130 AIQX) */}
-              <div>
-                <button
-                  onClick={() => onInspectSlotLevel?.(1)}
-                  className="px-6 py-2.5 rounded-xl bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-500 hover:to-indigo-500 text-white font-extrabold text-xs shadow-lg shadow-blue-600/30 transition-all cursor-pointer flex items-center space-x-1.5"
+              // Helper for spot dot rendering inside dashboard card
+              const renderDashSpot = (spotIdx: number, isRecycle: boolean) => {
+                const filled = spotIdx <= dotsFilled;
+                const dotSize =
+                  sc.level === 1
+                    ? 'w-6.5 h-6.5 sm:w-7 sm:h-7'
+                    : sc.level === 2
+                    ? 'w-6 h-6 sm:w-6.5 sm:h-6.5'
+                    : sc.level === 3
+                    ? 'w-5.5 h-5.5 sm:w-6 sm:h-6'
+                    : sc.level === 4
+                    ? 'w-5 h-5 sm:w-5.5 sm:h-5.5'
+                    : 'w-4.5 h-4.5 sm:w-5 sm:h-5';
+
+                return (
+                  <div
+                    key={spotIdx}
+                    className={`${dotSize} rounded-full flex items-center justify-center transition-all ${
+                      filled
+                        ? 'bg-white shadow-[0_0_12px_rgba(255,255,255,1)] ring-2 ring-white/80'
+                        : 'bg-[#293EB6]/70 border border-white/20'
+                    }`}
+                  >
+                    {isRecycle ? (
+                      <span className={`text-[10px] font-black ${filled ? 'text-[#3B54E6]' : 'text-white/60'}`}>
+                        ⟳
+                      </span>
+                    ) : (
+                      !filled && sc.level <= 3 && (
+                        <span className="text-[7px] font-mono text-white/30 font-semibold">{spotIdx}</span>
+                      )
+                    )}
+                  </div>
+                );
+              };
+
+              return (
+                <div
+                  key={sc.level}
+                  onClick={() => onInspectSlotLevel?.(sc.level)}
+                  className={`group rounded-2xl p-4 flex flex-col justify-between transition-all duration-200 cursor-pointer min-h-[190px] ${
+                    isUnlocked
+                      ? 'bg-gradient-to-b from-[#5670FB] to-[#3B54E6] text-white shadow-[0_8px_24px_rgba(79,104,247,0.35)] border border-[#758AFF]/50 hover:scale-[1.02]'
+                      : isNextInLine
+                      ? 'bg-gradient-to-b from-[#2B3B8A] to-[#1C2659] text-white/90 border-2 border-dashed border-[#5670FB]/70 shadow-[0_6px_18px_rgba(79,104,247,0.2)] hover:border-[#758AFF]'
+                      : 'bg-[#121622] text-[#8B949E] border border-[#1E2533] opacity-60 hover:opacity-85'
+                  }`}
                 >
-                  <span>Preview</span>
-                  <ArrowUpRight className="w-4 h-4" />
-                </button>
-              </div>
-            </div>
+                  {/* Card Top: Lvl N & Coin Price */}
+                  <div className="flex items-center justify-between pb-1.5 border-b border-white/10">
+                    <span className="text-xs font-black font-mono tracking-tight text-white">
+                      Lvl {sc.level}
+                    </span>
+
+                    <div className="flex items-center space-x-1">
+                      <div className="w-4 h-4 rounded-full bg-gradient-to-tr from-[#F59E0B] via-[#FBBF24] to-[#FEF08A] shadow-[0_1px_6px_rgba(245,158,11,0.5)] flex items-center justify-center">
+                        <span className="text-[8px] font-black text-[#78350F] leading-none">🪙</span>
+                      </div>
+                      <span className="text-xs font-black font-mono text-white">
+                        {sc.totalPackageFee.toLocaleString()}
+                      </span>
+                    </div>
+                  </div>
+
+                  {/* Card Center: Distinct Spot Layouts */}
+                  <div className="my-auto py-2 flex items-center justify-center">
+                    {/* Level 1: 3 in line */}
+                    {sc.level === 1 && (
+                      <div className="flex items-center justify-center gap-2 py-2">
+                        {renderDashSpot(1, false)}
+                        {renderDashSpot(2, false)}
+                        {renderDashSpot(3, true)}
+                      </div>
+                    )}
+
+                    {/* Level 2: 2x2 square (4 spots) */}
+                    {sc.level === 2 && (
+                      <div className="flex flex-col items-center justify-center gap-1.5 py-1">
+                        <div className="flex items-center justify-center gap-2">
+                          {renderDashSpot(1, false)}
+                          {renderDashSpot(2, false)}
+                        </div>
+                        <div className="flex items-center justify-center gap-2">
+                          {renderDashSpot(3, false)}
+                          {renderDashSpot(4, true)}
+                        </div>
+                      </div>
+                    )}
+
+                    {/* Level 3: 3 Top + 2 Bottom (5 spots) */}
+                    {sc.level === 3 && (
+                      <div className="flex flex-col items-center justify-center gap-1.5 py-1">
+                        <div className="flex items-center justify-center gap-1.5">
+                          {renderDashSpot(1, false)}
+                          {renderDashSpot(2, false)}
+                          {renderDashSpot(3, false)}
+                        </div>
+                        <div className="flex items-center justify-center gap-1.5">
+                          {renderDashSpot(4, false)}
+                          {renderDashSpot(5, true)}
+                        </div>
+                      </div>
+                    )}
+
+                    {/* Level 4: 2 Top + 4 Bottom (6 spots) */}
+                    {sc.level === 4 && (
+                      <div className="flex flex-col items-center justify-center gap-1.5 py-1">
+                        <div className="flex items-center justify-center gap-3">
+                          {renderDashSpot(1, false)}
+                          {renderDashSpot(2, false)}
+                        </div>
+                        <div className="flex items-center justify-center gap-1">
+                          {renderDashSpot(3, false)}
+                          {renderDashSpot(4, false)}
+                          {renderDashSpot(5, false)}
+                          {renderDashSpot(6, true)}
+                        </div>
+                      </div>
+                    )}
+
+                    {/* Level 5: 4 Top + 3 Bottom (7 spots) */}
+                    {sc.level === 5 && (
+                      <div className="flex flex-col items-center justify-center gap-1.5 py-1">
+                        <div className="flex items-center justify-center gap-1">
+                          {renderDashSpot(1, false)}
+                          {renderDashSpot(2, false)}
+                          {renderDashSpot(3, false)}
+                          {renderDashSpot(4, false)}
+                        </div>
+                        <div className="flex items-center justify-center gap-1.5">
+                          {renderDashSpot(5, false)}
+                          {renderDashSpot(6, false)}
+                          {renderDashSpot(7, true)}
+                        </div>
+                      </div>
+                    )}
+                  </div>
+
+                  {/* Card Bottom: Partners & Recycles */}
+                  <div className="flex items-center justify-between pt-1.5 border-t border-white/10 text-[10px] font-mono font-bold text-white/90">
+                    <div className="flex items-center space-x-1">
+                      <Users className="w-3.5 h-3.5 text-white/80" />
+                      <span>{membersCount}</span>
+                    </div>
+
+                    <div className="flex items-center space-x-1">
+                      <Repeat className="w-3.5 h-3.5 text-white/80" />
+                      <span>{recyclesCount}</span>
+                    </div>
+                  </div>
+                </div>
+              );
+            })}
           </div>
         </div>
       </div>

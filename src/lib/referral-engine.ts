@@ -1,14 +1,14 @@
 /**
- * AIQX Foundation 12-Slot Independent Matrix System
+ * AIQX Foundation 5-Slot Independent Matrix System
  * - Pure Slot-based Architecture: No multi-level dependency.
- * - Every slot higher than before (doubling: 100, 200, 400 ... 204,800 AIQX).
+ * - Every slot higher than before (doubling: 100, 200, 400, 800, 1,600 AIQX).
  * - Everyone earns under the exact same opportunity:
  *   - Slot 1: 2 Direct Spots + 1 Recycling Spot (3 spots total)
- *   - Slot 2: 3 Direct Spots + 1 Recycling Spot (4 spots total)
- *   - Slot 3: 4 Direct Spots + 1 Recycling Spot (5 spots total)
- *   - Slot 4: 4 Direct Spots + 1 Recycling Spot (5 spots total)
- *   - Slots 5-12: Scaling direct spots + 1 Recycling Spot
- * - 12 Slots Total
+ *   - Slot 2: 3 Direct Spots + 1 Recycling Spot (4 spots total: 2 Top + 2 Bottom)
+ *   - Slot 3: 4 Direct Spots + 1 Recycling Spot (5 spots total: 3 Top + 2 Bottom)
+ *   - Slot 4: 5 Direct Spots + 1 Recycling Spot (6 spots total: 2 Top + 4 Bottom)
+ *   - Slot 5: 6 Direct Spots + 1 Recycling Spot (7 spots total: 4 Top + 3 Bottom)
+ * - 5 Slots Total
  * - Exact Recycling Logic Preserved:
  *   50% to nearest qualified upline (with crossover search)
  *   10% to Protocol Treasury
@@ -33,22 +33,15 @@ export interface MatrixSlotConfig {
 export type MatrixLevelConfig = MatrixSlotConfig;
 
 /**
- * 12-Slot Independent Matrix Specification Table
- * 12 Independent Slots with increasing package fees and direct + 1 recycling spot
+ * 5-Slot Independent Matrix Specification Table
+ * 5 Independent Slots with progressive distinct capacities and increasing package fees
  */
 export const MATRIX_SLOTS_CONFIG: MatrixSlotConfig[] = [
-  { slot: 1,  level: 1,  slots: 3,  directSpots: 2,  recyclingSpots: 1, directReward: 50,     indirectReward: 30,    thirdLineReward: 5,     slotActivationFee: 15,    totalPackageFee: 100 },
-  { slot: 2,  level: 2,  slots: 4,  directSpots: 3,  recyclingSpots: 1, directReward: 100,    indirectReward: 60,    thirdLineReward: 10,    slotActivationFee: 30,    totalPackageFee: 200 },
-  { slot: 3,  level: 3,  slots: 5,  directSpots: 4,  recyclingSpots: 1, directReward: 200,    indirectReward: 120,   thirdLineReward: 20,    slotActivationFee: 60,    totalPackageFee: 400 },
-  { slot: 4,  level: 4,  slots: 5,  directSpots: 4,  recyclingSpots: 1, directReward: 400,    indirectReward: 240,   thirdLineReward: 40,    slotActivationFee: 120,   totalPackageFee: 800 },
-  { slot: 5,  level: 5,  slots: 6,  directSpots: 5,  recyclingSpots: 1, directReward: 800,    indirectReward: 480,   thirdLineReward: 80,    slotActivationFee: 240,   totalPackageFee: 1600 },
-  { slot: 6,  level: 6,  slots: 6,  directSpots: 5,  recyclingSpots: 1, directReward: 1600,   indirectReward: 960,   thirdLineReward: 160,   slotActivationFee: 480,   totalPackageFee: 3200 },
-  { slot: 7,  level: 7,  slots: 7,  directSpots: 6,  recyclingSpots: 1, directReward: 3200,   indirectReward: 1920,  thirdLineReward: 320,   slotActivationFee: 960,   totalPackageFee: 6400 },
-  { slot: 8,  level: 8,  slots: 7,  directSpots: 6,  recyclingSpots: 1, directReward: 6400,   indirectReward: 3840,  thirdLineReward: 640,   slotActivationFee: 1920,  totalPackageFee: 12800 },
-  { slot: 9,  level: 9,  slots: 8,  directSpots: 7,  recyclingSpots: 1, directReward: 12800,  indirectReward: 7680,  thirdLineReward: 1280,  slotActivationFee: 3840,  totalPackageFee: 25600 },
-  { slot: 10, level: 10, slots: 8,  directSpots: 7,  recyclingSpots: 1, directReward: 25600,  indirectReward: 15360, thirdLineReward: 2560,  slotActivationFee: 7680,  totalPackageFee: 51200 },
-  { slot: 11, level: 11, slots: 9,  directSpots: 8,  recyclingSpots: 1, directReward: 51200,  indirectReward: 30720, thirdLineReward: 5120,  slotActivationFee: 15360, totalPackageFee: 102400 },
-  { slot: 12, level: 12, slots: 9,  directSpots: 8,  recyclingSpots: 1, directReward: 102400, indirectReward: 61440, thirdLineReward: 10240, slotActivationFee: 30720, totalPackageFee: 204800 },
+  { slot: 1, level: 1, slots: 3, directSpots: 2, recyclingSpots: 1, directReward: 50,  indirectReward: 30,  thirdLineReward: 5,  slotActivationFee: 15,  totalPackageFee: 100 },
+  { slot: 2, level: 2, slots: 4, directSpots: 3, recyclingSpots: 1, directReward: 100, indirectReward: 60,  thirdLineReward: 10, slotActivationFee: 30,  totalPackageFee: 200 },
+  { slot: 3, level: 3, slots: 5, directSpots: 4, recyclingSpots: 1, directReward: 200, indirectReward: 120, thirdLineReward: 20, slotActivationFee: 60,  totalPackageFee: 400 },
+  { slot: 4, level: 4, slots: 6, directSpots: 5, recyclingSpots: 1, directReward: 400, indirectReward: 240, thirdLineReward: 40, slotActivationFee: 120, totalPackageFee: 800 },
+  { slot: 5, level: 5, slots: 7, directSpots: 6, recyclingSpots: 1, directReward: 800, indirectReward: 480, thirdLineReward: 80, slotActivationFee: 240, totalPackageFee: 1600 },
 ];
 
 export const MATRIX_LEVELS_CONFIG: MatrixLevelConfig[] = MATRIX_SLOTS_CONFIG;
@@ -56,7 +49,7 @@ export const MATRIX_LEVELS_CONFIG: MatrixLevelConfig[] = MATRIX_SLOTS_CONFIG;
 export function getMatrixSlotConfig(slotNumber: number): MatrixSlotConfig {
   const cfg = MATRIX_SLOTS_CONFIG.find((s) => s.slot === slotNumber || s.level === slotNumber);
   if (!cfg) {
-    throw new Error(`Invalid Matrix slot: ${slotNumber}. Supported slots are 1 through 12.`);
+    throw new Error(`Invalid Matrix slot: ${slotNumber}. Supported slots are 1 through 5.`);
   }
   return cfg;
 }

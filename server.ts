@@ -55,7 +55,7 @@ const verifier = new SolanaVerifier(RPC_URL, TOKEN_MINT, TREASURY_WALLET);
         upline3: null,
         joinTime: new Date('2025-01-01T00:00:00Z').toISOString(),
         joinSignature: 'GENESIS_BOOTSTRAP_INITIAL_SIGNATURE',
-        activeLevels: Array.from({ length: 12 }, (_, i) => i + 1),
+        activeLevels: Array.from({ length: 5 }, (_, i) => i + 1),
       });
       console.log(`[AIQX Init] Genesis Root wallet registered (ID 1): ${GENESIS_WALLET}`);
     }
@@ -76,8 +76,8 @@ app.get('/api/config', (req: Request, res: Response) => {
     totalTokenSupply: 4500000,
     decimals: 6,
     joiningFee: 100,
-    totalSlots: 12,
-    totalLevels: 12,
+    totalSlots: 5,
+    totalLevels: 5,
     network: RPC_URL.includes('mainnet') ? 'mainnet-beta' : 'devnet',
   });
 });
@@ -92,8 +92,8 @@ app.get('/api/stats', async (req: Request, res: Response) => {
         totalRegisteredUsers: stats.totalUsers,
         totalAiqxDistributed: stats.totalDistributed,
         totalSupply: 4500000,
-        totalSlots: 12,
-        totalLevels: 12,
+        totalSlots: 5,
+        totalLevels: 5,
         network: RPC_URL.includes('mainnet') ? 'Solana Mainnet' : 'Solana Devnet',
         systemPool: stats.systemPool,
         treasuryWallet: TREASURY_WALLET,
@@ -105,13 +105,13 @@ app.get('/api/stats', async (req: Request, res: Response) => {
   }
 });
 
-// API: 12-Slot Independent Matrix Specifications Table
+// API: 5-Slot Independent Matrix Specifications Table
 const getSlotsHandler = (req: Request, res: Response) => {
   res.json({
     success: true,
     program: 'AIQX Independent Slots Matrix',
-    totalSlots: 12,
-    totalLevels: 12,
+    totalSlots: 5,
+    totalLevels: 5,
     treasuryWallet: TREASURY_WALLET,
     slots: MATRIX_LEVELS_CONFIG,
     levels: MATRIX_LEVELS_CONFIG,
@@ -135,7 +135,7 @@ app.get('/api/matrix/member/:idOrWallet', async (req: Request, res: Response) =>
 
     const activeLevels = user.activeLevels || [1];
     const currentMaxLevel = Math.max(...activeLevels, 1);
-    const nextLevel = currentMaxLevel < 12 ? currentMaxLevel + 1 : null;
+    const nextLevel = currentMaxLevel < 5 ? currentMaxLevel + 1 : null;
     const nextConfig = nextLevel ? getMatrixLevelConfig(nextLevel) : null;
 
     res.json({
@@ -286,8 +286,8 @@ app.get('/api/matrix/slot-detail', async (req: Request, res: Response) => {
     if (!idOrWallet) {
       return res.status(400).json({ success: false, error: 'wallet or id is required' });
     }
-    if (targetLevel < 1 || targetLevel > 12) {
-      return res.status(400).json({ success: false, error: 'slot must be between 1 and 12' });
+    if (targetLevel < 1 || targetLevel > 5) {
+      return res.status(400).json({ success: false, error: 'slot must be between 1 and 5' });
     }
 
     const user = await db.getUserByWalletOrId(idOrWallet);
@@ -484,8 +484,8 @@ app.post('/api/matrix/activate-level', async (req: Request, res: Response) => {
     if (!wallet || !isValidSolanaAddress(wallet)) {
       return res.status(400).json({ success: false, error: 'Valid Solana wallet address is required' });
     }
-    if (!targetLevel || targetLevel < 2 || targetLevel > 12) {
-      return res.status(400).json({ success: false, error: 'Slot must be between 2 and 12' });
+    if (!targetLevel || targetLevel < 2 || targetLevel > 5) {
+      return res.status(400).json({ success: false, error: 'Slot must be between 2 and 5' });
     }
 
     const isProcessed = await db.isSignatureProcessed(signature);
@@ -603,8 +603,8 @@ app.post('/api/matrix/recycle-slot', async (req: Request, res: Response) => {
     if (!wallet || !isValidSolanaAddress(wallet)) {
       return res.status(400).json({ success: false, error: 'Valid Solana wallet address is required' });
     }
-    if (targetLevel < 1 || targetLevel > 12) {
-      return res.status(400).json({ success: false, error: 'Slot must be between 1 and 12' });
+    if (targetLevel < 1 || targetLevel > 5) {
+      return res.status(400).json({ success: false, error: 'Slot must be between 1 and 5' });
     }
 
     const user = await db.getUser(wallet);

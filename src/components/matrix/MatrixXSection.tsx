@@ -61,7 +61,7 @@ export const MatrixXSection: FC<MatrixXSectionProps> = ({
   const [userProfile, setUserProfile] = useState<any>(null);
 
   const highestActiveLevel = Math.max(...userActiveLevels, 1);
-  const nextLevelToUpgrade = highestActiveLevel < 14 ? highestActiveLevel + 1 : null;
+  const nextLevelToUpgrade = highestActiveLevel < 5 ? highestActiveLevel + 1 : null;
 
   // Load member info and slot data
   useEffect(() => {
