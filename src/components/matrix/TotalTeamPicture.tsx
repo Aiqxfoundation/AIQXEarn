@@ -133,9 +133,9 @@ export const TotalTeamPicture: FC<TotalTeamPictureProps> = ({
   return (
     <div className="space-y-6 max-w-7xl mx-auto py-2 animate-fadeIn">
       {/* Top Header Controls */}
-      <div className="flex items-center justify-between p-5 rounded-3xl bg-[#111622] border border-[#1E2533] shadow-md">
+      <div className="flex items-center justify-between p-5 rounded-2xl bg-[#11161E] border border-[#1E2533] shadow-2xl">
         <div className="flex items-center space-x-3">
-          <div className="w-10 h-10 rounded-2xl bg-blue-600/20 text-blue-400 border border-blue-500/30 flex items-center justify-center font-bold">
+          <div className="w-10 h-10 rounded-xl bg-[#F5A623]/15 text-[#F5A623] border border-[#F5A623]/30 flex items-center justify-center font-bold">
             <Users className="w-5 h-5" />
           </div>
           <div>
@@ -151,48 +151,48 @@ export const TotalTeamPicture: FC<TotalTeamPictureProps> = ({
         <button
           onClick={loadTeamData}
           disabled={loading}
-          className="p-2.5 rounded-2xl bg-[#151D2A] hover:bg-[#1E293B] text-white border border-[#222E42] transition-colors cursor-pointer flex items-center justify-center shadow-sm"
+          className="p-2.5 rounded-xl bg-[#171D27] hover:bg-[#1E2533] text-white border border-[#232B3B] transition-colors cursor-pointer flex items-center justify-center shadow-sm"
           title="Refresh Tree"
         >
-          <RefreshCw className={`w-4 h-4 text-blue-400 ${loading ? 'animate-spin' : ''}`} />
+          <RefreshCw className={`w-4 h-4 text-[#F5A623] ${loading ? 'animate-spin' : ''}`} />
         </button>
       </div>
 
       {/* 4 Clean Metric Cards */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-        <div className="p-5 rounded-3xl bg-[#111622] border border-[#1E2533] shadow-sm">
+        <div className="p-5 rounded-2xl bg-[#11161E] border border-[#1E2533] shadow-2xl">
           <div className="text-xs text-[#8B949E] mb-1 font-mono">Total Team</div>
           <div className="text-2xl sm:text-3xl font-black text-white font-mono">
             {referrals.totalNetworkCount}
           </div>
         </div>
 
-        <div className="p-5 rounded-3xl bg-[#111622] border border-[#1E2533] shadow-sm">
+        <div className="p-5 rounded-2xl bg-[#11161E] border border-[#1E2533] shadow-2xl">
           <div className="text-xs text-[#8B949E] mb-1 font-mono">Line 1 (50%)</div>
           <div className="text-2xl sm:text-3xl font-black text-emerald-400 font-mono">
             {referrals.l1Count}
           </div>
         </div>
 
-        <div className="p-5 rounded-3xl bg-[#111622] border border-[#1E2533] shadow-sm">
+        <div className="p-5 rounded-2xl bg-[#11161E] border border-[#1E2533] shadow-2xl">
           <div className="text-xs text-[#8B949E] mb-1 font-mono">Line 2 (30%)</div>
-          <div className="text-2xl sm:text-3xl font-black text-blue-400 font-mono">
+          <div className="text-2xl sm:text-3xl font-black text-[#F5A623] font-mono">
             {referrals.l2Count}
           </div>
         </div>
 
-        <div className="p-5 rounded-3xl bg-[#111622] border border-[#1E2533] shadow-sm">
+        <div className="p-5 rounded-2xl bg-[#11161E] border border-[#1E2533] shadow-2xl">
           <div className="text-xs text-[#8B949E] mb-1 font-mono">Line 3 (5%)</div>
-          <div className="text-2xl sm:text-3xl font-black text-purple-400 font-mono">
+          <div className="text-2xl sm:text-3xl font-black text-cyan-400 font-mono">
             {referrals.l3Count}
           </div>
         </div>
       </div>
 
       {/* ── UNIFIED CONNECTED VECTOR TREE CANVAS (100% LINKED, NEVER DISCONNECTED) ── */}
-      <div className="rounded-3xl bg-[#0A0D14] border border-[#1A2232] shadow-2xl overflow-hidden relative">
+      <div className="rounded-2xl bg-[#0B0E11] border border-[#1E2533] shadow-2xl overflow-hidden relative">
         {/* Canvas Toolbar */}
-        <div className="bg-[#0E131E]/90 backdrop-blur-md border-b border-[#1A2333] px-6 py-3 flex items-center justify-between">
+        <div className="bg-[#11161E] border-b border-[#1E2533] px-6 py-3 flex items-center justify-between">
           <div className="flex items-center space-x-2">
             <span className="font-mono text-xs font-bold text-white">Connected Architecture</span>
             <span className="text-[10px] font-mono text-emerald-400 bg-emerald-500/15 px-2 py-0.5 rounded-full border border-emerald-500/30">
@@ -201,7 +201,7 @@ export const TotalTeamPicture: FC<TotalTeamPictureProps> = ({
           </div>
 
           {/* Zoom Controls */}
-          <div className="flex items-center space-x-1.5 px-1.5 py-1 rounded-xl bg-[#141B28] border border-[#202C3F]">
+          <div className="flex items-center space-x-1.5 px-1.5 py-1 rounded-lg bg-[#171D27] border border-[#232B3B]">
             <button
               onClick={() => setZoomLevel((z) => Math.max(0.6, z - 0.1))}
               className="p-1 text-[#8B949E] hover:text-white rounded-lg cursor-pointer"
@@ -227,7 +227,7 @@ export const TotalTeamPicture: FC<TotalTeamPictureProps> = ({
         </div>
 
         {/* Tree Container: Fits on Mobile & Pans Cleanly */}
-        <div className="p-4 sm:p-8 flex flex-col items-center justify-center relative bg-[radial-gradient(#172133_1px,transparent_1px)] [background-size:24px_24px] overflow-x-auto min-h-[440px]">
+        <div className="p-4 sm:p-8 flex flex-col items-center justify-center relative bg-[radial-gradient(#1E2533_1px,transparent_1px)] [background-size:24px_24px] overflow-x-auto min-h-[440px]">
           <div
             className="w-full flex justify-center transition-transform duration-150 ease-out origin-center"
             style={{ transform: `scale(${zoomLevel})` }}
@@ -241,8 +241,8 @@ export const TotalTeamPicture: FC<TotalTeamPictureProps> = ({
               <defs>
                 {/* Gradients */}
                 <linearGradient id="rootGrad" x1="0" y1="0" x2="0" y2="1">
-                  <stop offset="0%" stopColor="#2563EB" />
-                  <stop offset="100%" stopColor="#1E3A8A" />
+                  <stop offset="0%" stopColor="#F5A623" />
+                  <stop offset="100%" stopColor="#C87A04" />
                 </linearGradient>
 
                 <linearGradient id="dirGrad" x1="0" y1="0" x2="0" y2="1">
@@ -256,20 +256,20 @@ export const TotalTeamPicture: FC<TotalTeamPictureProps> = ({
                 </linearGradient>
 
                 <linearGradient id="emptyGrad" x1="0" y1="0" x2="0" y2="1">
-                  <stop offset="0%" stopColor="#141C2A" />
-                  <stop offset="100%" stopColor="#0D131E" />
+                  <stop offset="0%" stopColor="#171D27" />
+                  <stop offset="100%" stopColor="#0B0E11" />
                 </linearGradient>
 
                 {/* Glow Filter */}
-                <filter id="blueGlow" x="-20%" y="-20%" width="140%" height="140%">
+                <filter id="goldGlow" x="-20%" y="-20%" width="140%" height="140%">
                   <feGaussianBlur stdDeviation="6" result="blur" />
                   <feComposite in="SourceGraphic" in2="blur" operator="over" />
                 </filter>
               </defs>
 
               {/* ════ LEVEL 0 -> LEVEL 1 CONNECTING LINES (LEADER -> 3 DIRECTS) ════ */}
-              <line x1="450" y1="95" x2="450" y2="130" stroke="#3B82F6" strokeWidth="3" strokeLinecap="round" />
-              <line x1="160" y1="130" x2="740" y2="130" stroke="#3B82F6" strokeWidth="3" strokeLinecap="round" />
+              <line x1="450" y1="95" x2="450" y2="130" stroke="#F5A623" strokeWidth="3" strokeLinecap="round" />
+              <line x1="160" y1="130" x2="740" y2="130" stroke="#F5A623" strokeWidth="3" strokeLinecap="round" />
               <line x1="160" y1="130" x2="160" y2="162" stroke="#10B981" strokeWidth="3" strokeLinecap="round" />
               <line x1="450" y1="130" x2="450" y2="162" stroke="#10B981" strokeWidth="3" strokeLinecap="round" />
               <line x1="740" y1="130" x2="740" y2="162" stroke="#10B981" strokeWidth="3" strokeLinecap="round" />
@@ -308,11 +308,11 @@ export const TotalTeamPicture: FC<TotalTeamPictureProps> = ({
                   })
                 }
               >
-                <circle cx="450" cy="55" r="40" fill="url(#rootGrad)" stroke="#60A5FA" strokeWidth="3" filter="url(#blueGlow)" />
-                <text x="450" y="52" fill="#FFFFFF" fontSize="13" fontWeight="900" textAnchor="middle" fontFamily="monospace">
+                <circle cx="450" cy="55" r="40" fill="url(#rootGrad)" stroke="#F5A623" strokeWidth="3" filter="url(#goldGlow)" />
+                <text x="450" y="52" fill="#0B0E11" fontSize="13" fontWeight="900" textAnchor="middle" fontFamily="monospace">
                   YOU
                 </text>
-                <text x="450" y="68" fill="#93C5FD" fontSize="11" fontWeight="700" textAnchor="middle" fontFamily="monospace">
+                <text x="450" y="68" fill="#171D27" fontSize="11" fontWeight="800" textAnchor="middle" fontFamily="monospace">
                   ID #{rootMember.id}
                 </text>
               </g>
@@ -457,9 +457,9 @@ export const TotalTeamPicture: FC<TotalTeamPictureProps> = ({
 
         {/* Selected Member Detail Drawer */}
         {selectedMember && (
-          <div className="mx-6 mb-6 p-4 rounded-2xl bg-[#141B28] border border-blue-500/40 flex flex-col sm:flex-row sm:items-center justify-between gap-3 animate-fadeIn">
+          <div className="mx-6 mb-6 p-4 rounded-xl bg-[#11161E] border border-[#1E2533] shadow-2xl flex flex-col sm:flex-row sm:items-center justify-between gap-3 animate-fadeIn">
             <div className="flex items-center space-x-3">
-              <div className="w-10 h-10 rounded-xl bg-blue-600/20 text-blue-400 border border-blue-500/30 flex items-center justify-center font-mono font-bold text-xs">
+              <div className="w-10 h-10 rounded-xl bg-[#F5A623]/15 text-[#F5A623] border border-[#F5A623]/30 flex items-center justify-center font-mono font-bold text-xs">
                 #{selectedMember.id}
               </div>
               <div className="space-y-0.5">
@@ -487,7 +487,7 @@ export const TotalTeamPicture: FC<TotalTeamPictureProps> = ({
                     href={getExplorerUrl(selectedMember.wallet, 'address', 'mainnet-beta')}
                     target="_blank"
                     rel="noreferrer"
-                    className="hover:text-blue-400 transition-colors"
+                    className="hover:text-[#F5A623] transition-colors"
                   >
                     <ExternalLink className="w-3 h-3" />
                   </a>
@@ -499,14 +499,14 @@ export const TotalTeamPicture: FC<TotalTeamPictureProps> = ({
               {onPreviewMemberId && (
                 <button
                   onClick={() => onPreviewMemberId(selectedMember.id)}
-                  className="px-3.5 py-1.5 rounded-xl bg-blue-600 hover:bg-blue-500 text-white font-bold text-xs cursor-pointer transition-colors shadow-sm"
+                  className="px-3.5 py-1.5 rounded-lg bg-[#F5A623] hover:bg-[#e59917] text-[#0B0E11] font-bold text-xs cursor-pointer transition-colors shadow-sm"
                 >
                   Inspect Matrix
                 </button>
               )}
               <button
                 onClick={() => setSelectedMember(null)}
-                className="px-3 py-1.5 rounded-xl bg-[#1B2434] hover:bg-[#253246] text-white text-xs font-mono cursor-pointer"
+                className="px-3 py-1.5 rounded-lg bg-[#171D27] hover:bg-[#1E2533] text-white text-xs font-mono cursor-pointer border border-[#232B3B]"
               >
                 ✕
               </button>

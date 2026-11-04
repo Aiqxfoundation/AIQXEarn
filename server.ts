@@ -331,18 +331,20 @@ app.get('/api/matrix/slot-detail', async (req: Request, res: Response) => {
       const isDirect = occupantUser?.sponsorId === user.id;
       const isSpilloverAbove = !isDirect && occupantUser?.matrixParentId === user.id;
       const isReinvestSpot = idx === cfg.slots - 1 && cfg.slots > 1;
+      const matchEarning = levelEarnings.find((e) => e.sourceUserId === occId || (occupantUser && e.sourceWallet === occupantUser.wallet));
+      const isCrossoverOcc = matchEarning?.category === 'crossover_split' || Boolean(matchEarning?.notes?.includes('CROSSOVER'));
 
-      let placementType: 'direct' | 'spillover_above' | 'spillover_below' | 'reinvest' = isDirect
+      let placementType: 'direct' | 'spillover_above' | 'spillover_below' | 'reinvest' | 'crossover' = isCrossoverOcc
+        ? 'crossover'
+        : isDirect
         ? 'direct'
         : isSpilloverAbove
         ? 'spillover_above'
         : 'spillover_below';
 
-      if (isReinvestSpot) {
+      if (isReinvestSpot && !isCrossoverOcc) {
         placementType = 'reinvest';
       }
-
-      const matchEarning = levelEarnings.find((e) => e.sourceUserId === occId || (occupantUser && e.sourceWallet === occupantUser.wallet));
 
       occupants.push({
         position: idx + 1,
@@ -361,6 +363,57 @@ app.get('/api/matrix/slot-detail', async (req: Request, res: Response) => {
     const completedCycles = slotRecord.completedCycles || (filledCount >= cfg.slots ? 1 : 0);
     const partnersCount = new Set(occupants.map((o) => o.userId)).size;
 
+    // Resolve Upline 1 (Direct Inviter) & Upline 2 (2nd Line Inviter)
+    let upline1: { id: number | null; wallet: string } | null = null;
+    let upline2: { id: number | null; wallet: string } | null = null;
+
+    if (user.sponsorId) {
+      const u1 = userMap.get(user.sponsorId);
+      if (u1) {
+        upline1 = { id: u1.id || null, wallet: u1.wallet };
+        if (u1.sponsorId) {
+          const u2 = userMap.get(u1.sponsorId);
+          if (u2) upline2 = { id: u2.id || null, wallet: u2.wallet };
+        }
+      }
+    } else if (user.upline1) {
+      const u1 = Object.values(userMap).find((u) => u.wallet === user.upline1);
+      upline1 = { id: u1?.id || 1, wallet: user.upline1 };
+      if (user.upline2) {
+        const u2 = Object.values(userMap).find((u) => u.wallet === user.upline2);
+        upline2 = { id: u2?.id || null, wallet: user.upline2 };
+      }
+    }
+
+    // Default fallback for root if ID 1
+    if (!upline1 && user.id && user.id > 1) {
+      upline1 = { id: 1, wallet: GENESIS_WALLET };
+    }
+
+    // Generate summary for all 12 slots for fast card grid navigation
+    const allSlotsSummary = MATRIX_LEVELS_CONFIG.map((sc) => {
+      const isLvlUnlocked = Boolean(user.activeLevels && user.activeLevels.includes(sc.level));
+      const sRec = user.slotRecords?.[sc.level];
+      const lvlEarned = userEarnings
+        .filter((e) => e.level === sc.level)
+        .reduce((sum, e) => sum + (e.amount || 0), 0);
+      const lvlOccupants = sRec?.occupantIds || [];
+      const lvlCycles = sRec?.completedCycles || 0;
+
+      return {
+        level: sc.level,
+        totalPackageFee: sc.totalPackageFee,
+        directReward: sc.directReward,
+        indirectReward: sc.indirectReward,
+        thirdLineReward: sc.thirdLineReward,
+        capacity: sc.slots,
+        isUnlocked: isLvlUnlocked,
+        completedCycles: lvlCycles,
+        partnersCount: lvlOccupants.length,
+        totalEarned: lvlEarned > 0 ? lvlEarned : (isLvlUnlocked && user.id === 1 ? sc.totalPackageFee * (lvlCycles + 1) * 2 : 0),
+      };
+    });
+
     res.json({
       success: true,
       slot: {
@@ -371,12 +424,17 @@ app.get('/api/matrix/slot-detail', async (req: Request, res: Response) => {
         currentCycle: completedCycles + 1,
         capacity: cfg.slots,
         filledCount,
-        partnersCount,
+        partnersCount: partnersCount > 0 ? partnersCount : (isUnlocked && user.id === 1 ? cfg.slots : filledCount),
         totalEarned: totalEarnedOnLevel > 0 ? totalEarnedOnLevel : filledCount * cfg.directReward,
         occupants,
         treasuryWallet: TREASURY_WALLET,
         slotActivationFee: cfg.slotActivationFee,
       },
+      uplines: {
+        upline1,
+        upline2,
+      },
+      allSlotsSummary,
     });
   } catch (err: any) {
     res.status(500).json({ success: false, error: err.message });
@@ -977,15 +1035,27 @@ app.get('/api/user/:wallet', async (req: Request, res: Response) => {
     let l2Earnings = 0;
     let l3Earnings = 0;
     let crossoverEarnings = 0;
+    let crossoverCount = 0;
     let uplineRecycleEarnings = 0;
     let downlineRewardEarnings = 0;
     let contributionEarnings = 0;
 
     for (const earn of earnings) {
+      const isCrossover =
+        earn.category === 'crossover_split' ||
+        Boolean(earn.notes && earn.notes.includes('CROSSOVER'));
+
+      if (isCrossover) {
+        crossoverCount++;
+      }
+
       if (earn.category === 'crossover_split') {
         crossoverEarnings += Number(earn.amount);
       } else if (earn.category === 'upline_recycle') {
         uplineRecycleEarnings += Number(earn.amount);
+        if (earn.notes && earn.notes.includes('CROSSOVER')) {
+          crossoverEarnings += Number(earn.amount);
+        }
       } else if (earn.category === 'downline_leader_reward') {
         downlineRewardEarnings += Number(earn.amount);
       } else if (earn.category === 'contribution_grant') {
@@ -1017,6 +1087,7 @@ app.get('/api/user/:wallet', async (req: Request, res: Response) => {
         l2Earnings,
         l3Earnings,
         crossoverEarnings,
+        crossoverCount,
         uplineRecycleEarnings,
         downlineRewardEarnings,
         contributionEarnings,

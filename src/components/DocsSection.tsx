@@ -65,11 +65,11 @@ export const DocsSection: FC<DocsSectionProps> = ({
   return (
     <div className="space-y-6 max-w-6xl mx-auto py-2">
       {/* Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 p-6 rounded-2xl bg-[#11161E] border border-[#1E2533]">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 p-6 rounded-2xl bg-[#11161E] border border-[#1E2533] shadow-2xl">
         <div className="space-y-1">
           <div className="flex items-center space-x-2">
-            <span className="w-2.5 h-2.5 rounded-full bg-cyan-400 animate-pulse" />
-            <span className="text-xs font-mono font-bold uppercase tracking-wider text-cyan-400">
+            <span className="w-2.5 h-2.5 rounded-full bg-[#F5A623] animate-pulse" />
+            <span className="text-xs font-mono font-bold uppercase tracking-wider text-[#F5A623]">
               Protocol Documentation &amp; Architecture
             </span>
           </div>
@@ -83,7 +83,7 @@ export const DocsSection: FC<DocsSectionProps> = ({
           {onNavigateToJoin && (
             <button
               onClick={onNavigateToJoin}
-              className="px-4 py-2 rounded-xl bg-[#232B3B] hover:bg-[#2C364A] text-white text-xs font-semibold cursor-pointer transition-colors"
+              className="px-4 py-2 rounded-xl bg-[#171D27] hover:bg-[#1E2533] border border-[#232B3B] text-white text-xs font-semibold cursor-pointer transition-colors"
             >
               Join (100 AIQX)
             </button>
@@ -91,7 +91,7 @@ export const DocsSection: FC<DocsSectionProps> = ({
           {onNavigateToMatrix && (
             <button
               onClick={onNavigateToMatrix}
-              className="px-4 py-2 rounded-xl bg-blue-600 hover:bg-blue-500 text-white text-xs font-bold shadow-lg shadow-blue-500/20 cursor-pointer transition-colors"
+              className="px-4 py-2 rounded-xl bg-[#F5A623] hover:bg-[#e59917] text-[#0B0E11] text-xs font-bold shadow-[0_4px_16px_rgba(245,166,35,0.25)] cursor-pointer transition-colors"
             >
               Open Matrix X →
             </button>
@@ -103,7 +103,7 @@ export const DocsSection: FC<DocsSectionProps> = ({
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
         {/* Left Doc Sidebar */}
         <div className="lg:col-span-4 space-y-2">
-          <div className="p-3 rounded-2xl bg-[#11161E] border border-[#1E2533] space-y-1">
+          <div className="p-3 rounded-2xl bg-[#11161E] border border-[#1E2533] space-y-1 shadow-2xl">
             <div className="px-3 py-2 text-[11px] font-mono font-bold text-[#8B949E] uppercase tracking-wider">
               Sections
             </div>
@@ -116,11 +116,11 @@ export const DocsSection: FC<DocsSectionProps> = ({
                   onClick={() => setActiveDocTab(sec.id as any)}
                   className={`w-full flex items-center space-x-3 px-3.5 py-3 rounded-xl text-left text-xs font-medium transition-all cursor-pointer ${
                     isActive
-                      ? 'bg-blue-600/15 text-blue-400 border border-blue-500/30 font-semibold shadow-sm'
-                      : 'text-[#8B949E] hover:text-white hover:bg-[#171D27]'
+                      ? 'bg-[#171D27] text-[#F5A623] border border-[#F5A623]/40 font-bold shadow-sm'
+                      : 'text-[#8B949E] hover:text-white hover:bg-[#0B0E11]'
                   }`}
                 >
-                  <Icon className={`w-4 h-4 shrink-0 ${isActive ? 'text-blue-400' : 'text-[#6E7681]'}`} />
+                  <Icon className={`w-4 h-4 shrink-0 ${isActive ? 'text-[#F5A623]' : 'text-[#6E7681]'}`} />
                   <span className="truncate">{sec.label}</span>
                 </button>
               );

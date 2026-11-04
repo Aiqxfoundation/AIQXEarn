@@ -70,6 +70,7 @@ function AppContent() {
     l2Earnings: number;
     l3Earnings: number;
     crossoverEarnings?: number;
+    crossoverCount?: number;
     contributionEarnings?: number;
     totalEarnings: number;
     uplineRecycleEarnings?: number;
@@ -80,6 +81,7 @@ function AppContent() {
     l2Earnings: 0,
     l3Earnings: 0,
     crossoverEarnings: 0,
+    crossoverCount: 0,
     uplineRecycleEarnings: 0,
     downlineRewardEarnings: 0,
     contributionEarnings: 0,
@@ -447,16 +449,16 @@ function AppContent() {
 
       {/* Modal Join / Onboarding (Keeps everything on single dashboard) */}
       {isJoinModalOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm animate-fadeIn">
-          <div className="relative w-full max-w-xl bg-[#0D1117] border border-[#1E2533] rounded-3xl p-6 shadow-2xl max-h-[90vh] overflow-y-auto">
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/85 backdrop-blur-sm animate-fadeIn">
+          <div className="relative w-full max-w-xl bg-[#11161E] border border-[#1E2533] rounded-2xl p-6 shadow-2xl max-h-[90vh] overflow-y-auto">
             <div className="flex items-center justify-between pb-4 border-b border-[#1E2533]">
               <div className="flex items-center space-x-2">
-                <span className="w-2.5 h-2.5 rounded-full bg-blue-500 animate-pulse" />
+                <span className="w-2.5 h-2.5 rounded-full bg-[#F5A623] animate-pulse" />
                 <h3 className="text-lg font-black text-white">Join AIQX Matrix X</h3>
               </div>
               <button
                 onClick={() => setIsJoinModalOpen(false)}
-                className="p-1.5 rounded-xl bg-[#171D27] hover:bg-[#202735] text-[#8B949E] hover:text-white transition-colors cursor-pointer"
+                className="p-1.5 rounded-lg bg-[#171D27] hover:bg-[#1E2533] text-[#8B949E] hover:text-white transition-colors cursor-pointer"
               >
                 ✕
               </button>
@@ -490,7 +492,7 @@ function AppContent() {
       )}
 
       {/* Clean Footer */}
-      <footer className="border-t border-[#1E2533] bg-[#0B0E14] py-4 text-xs text-[#8B949E] mt-auto">
+      <footer className="border-t border-[#1E2533] bg-[#0B0E11] py-4 text-xs text-[#8B949E] mt-auto">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex flex-col sm:flex-row items-center justify-between gap-3">
           <div className="flex items-center space-x-2">
             <SolanaLogo className="w-3.5 h-3.5" />
@@ -502,13 +504,13 @@ function AppContent() {
           <div className="flex items-center space-x-4">
             <button
               onClick={() => setActiveTab('docs')}
-              className="text-[11px] text-[#8B949E] hover:text-blue-400 transition-colors cursor-pointer font-mono"
+              className="text-[11px] text-[#8B949E] hover:text-[#F5A623] transition-colors cursor-pointer font-mono"
             >
               Docs
             </button>
             <button
               onClick={() => setActiveTab('terminal')}
-              className="text-[11px] text-[#8B949E] hover:text-blue-400 transition-colors cursor-pointer font-mono"
+              className="text-[11px] text-[#8B949E] hover:text-[#F5A623] transition-colors cursor-pointer font-mono"
             >
               DEX
             </button>
@@ -516,7 +518,7 @@ function AppContent() {
               href="https://explorer.solana.com/address/AiqxkvBcvugexLRRxFXBYxT5ekcrSb9noosq3VqBTRFD"
               target="_blank"
               rel="noreferrer"
-              className="text-[11px] text-[#8B949E] hover:text-blue-400 transition-colors cursor-pointer font-mono"
+              className="text-[11px] text-[#8B949E] hover:text-[#F5A623] transition-colors cursor-pointer font-mono"
             >
               Explorer
             </a>

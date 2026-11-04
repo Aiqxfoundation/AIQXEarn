@@ -99,16 +99,16 @@ export const AiqxSidebar: FC<AiqxSidebarProps> = ({
             <button
               key={item.id}
               onClick={item.action}
-              className={`w-full flex items-center justify-between px-3.5 py-2.5 rounded-2xl text-xs font-semibold transition-all cursor-pointer ${
+              className={`w-full flex items-center justify-between px-3.5 py-2.5 rounded-xl text-xs font-semibold transition-all cursor-pointer ${
                 isActive
-                  ? 'bg-[#182132] text-white shadow-sm ring-1 ring-blue-500/40'
-                  : 'text-[#8B949E] hover:text-white hover:bg-[#141A24]'
+                  ? 'bg-[#171D27] text-[#F5A623] border border-[#F5A623]/40 shadow-sm font-bold'
+                  : 'text-[#8B949E] hover:text-white hover:bg-[#11161E]'
               }`}
             >
               <div className="flex items-center space-x-3 min-w-0">
                 <Icon
                   className={`w-4 h-4 shrink-0 ${
-                    isActive ? 'text-blue-400' : 'text-[#6E7681]'
+                    isActive ? 'text-[#F5A623]' : 'text-[#6E7681]'
                   }`}
                 />
                 <span className="truncate">{item.label}</span>
@@ -130,7 +130,7 @@ export const AiqxSidebar: FC<AiqxSidebarProps> = ({
       {/* Bottom Footer Section: Old Interface Toggle, English, Socials */}
       <div className="space-y-4 pt-6 border-t border-[#1E2533]">
         {/* "Old interface" toggle switch matching screenshot */}
-        <div className="flex items-center justify-between px-3 py-2 rounded-2xl bg-[#111622] border border-[#1E2533]">
+        <div className="flex items-center justify-between px-3 py-2 rounded-xl bg-[#11161E] border border-[#1E2533]">
           <span className="text-xs text-[#8B949E] font-medium">Old interface</span>
           <button
             type="button"
@@ -138,7 +138,7 @@ export const AiqxSidebar: FC<AiqxSidebarProps> = ({
             aria-checked={oldInterfaceToggle}
             onClick={() => setOldInterfaceToggle((prev) => !prev)}
             className={`relative inline-flex h-5 w-9 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none ${
-              oldInterfaceToggle ? 'bg-purple-600' : 'bg-[#2A3448]'
+              oldInterfaceToggle ? 'bg-[#F5A623]' : 'bg-[#171D27]'
             }`}
           >
             <span
@@ -161,7 +161,7 @@ export const AiqxSidebar: FC<AiqxSidebarProps> = ({
             href="https://t.me/aiqxfoundation"
             target="_blank"
             rel="noreferrer"
-            className="hover:text-white transition-colors p-1.5 rounded-lg hover:bg-[#171D27]"
+            className="hover:text-[#F5A623] transition-colors p-1.5 rounded-lg hover:bg-[#171D27]"
             title="Telegram"
           >
             <Send className="w-3.5 h-3.5" />
@@ -170,7 +170,7 @@ export const AiqxSidebar: FC<AiqxSidebarProps> = ({
             href="https://youtube.com"
             target="_blank"
             rel="noreferrer"
-            className="hover:text-white transition-colors p-1.5 rounded-lg hover:bg-[#171D27]"
+            className="hover:text-[#F5A623] transition-colors p-1.5 rounded-lg hover:bg-[#171D27]"
             title="YouTube"
           >
             <Youtube className="w-3.5 h-3.5" />
@@ -179,7 +179,7 @@ export const AiqxSidebar: FC<AiqxSidebarProps> = ({
             href="https://x.com/AiqxFoundation"
             target="_blank"
             rel="noreferrer"
-            className="hover:text-white transition-colors p-1.5 rounded-lg hover:bg-[#171D27]"
+            className="hover:text-[#F5A623] transition-colors p-1.5 rounded-lg hover:bg-[#171D27]"
             title="Twitter / X"
           >
             <Twitter className="w-3.5 h-3.5" />

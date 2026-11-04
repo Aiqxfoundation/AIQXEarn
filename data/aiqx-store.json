@@ -138,6 +138,18 @@
       "category": "l2_reward"
     },
     {
+      "id": "sig_crossover_upgrade_l2_001",
+      "wallet": "AiqxRoot11111111111111111111111111111111111",
+      "sourceWallet": "User222222222222222222222222222222222222222",
+      "sourceUserId": 3,
+      "level": 2,
+      "amount": 60,
+      "transactionSignature": "sig_crossover_tx_3_bypass",
+      "timestamp": "2026-11-04T02:15:00.000Z",
+      "category": "crossover_split",
+      "notes": "Level 2 Upward Crossover: Member #3 upgraded Level 2, sponsor #2 unqualified, commission bypassed upward to qualified upline [CROSSOVER]"
+    },
+    {
       "id": "sig_recycle_1_1793725219493_upline_recycle",
       "wallet": "AiqxRoot11111111111111111111111111111111111",
       "sourceWallet": "User111111111111111111111111111111111111111",

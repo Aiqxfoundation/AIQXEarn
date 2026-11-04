@@ -172,11 +172,11 @@ export const AiqxSlotModal: FC<AiqxSlotModalProps> = ({
     <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-5 bg-black/85 backdrop-blur-md animate-fadeIn overflow-y-auto">
       <div className="fixed inset-0" onClick={onClose} />
 
-      <div className="relative w-full max-w-4xl max-h-[92vh] flex flex-col bg-[#0B0E14] border border-[#232F42] rounded-3xl shadow-2xl overflow-hidden z-10">
+      <div className="relative w-full max-w-4xl max-h-[92vh] flex flex-col bg-[#11161E] border border-[#1E2533] rounded-2xl shadow-2xl overflow-hidden z-10">
         {/* Modal Top Header */}
-        <div className="flex items-center justify-between p-5 sm:p-6 border-b border-[#1A2332] bg-[#0E131C] shrink-0">
+        <div className="flex items-center justify-between p-5 sm:p-6 border-b border-[#1E2533] bg-[#0B0E11] shrink-0">
           <div className="flex items-center space-x-3.5">
-            <div className="w-12 h-12 rounded-2xl bg-gradient-to-br from-[#F5A623]/20 to-transparent border border-[#F5A623]/40 flex items-center justify-center font-mono font-black text-xl text-[#F5A623] shadow-[0_0_15px_rgba(245,166,35,0.25)]">
+            <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-[#F5A623]/20 to-transparent border border-[#F5A623]/40 flex items-center justify-center font-mono font-black text-xl text-[#F5A623] shadow-[0_0_15px_rgba(245,166,35,0.25)]">
               Slot {levelConfig.level}
             </div>
             <div>
@@ -194,7 +194,7 @@ export const AiqxSlotModal: FC<AiqxSlotModalProps> = ({
                     Next to Activate
                   </span>
                 ) : (
-                  <span className="px-2.5 py-0.5 rounded-full text-[11px] font-mono font-bold bg-[#1C2533] text-[#8B949E] border border-[#2B384D]">
+                  <span className="px-2.5 py-0.5 rounded-full text-[11px] font-mono font-bold bg-[#171D27] text-[#8B949E] border border-[#232B3B]">
                     Locked
                   </span>
                 )}
@@ -207,7 +207,7 @@ export const AiqxSlotModal: FC<AiqxSlotModalProps> = ({
 
           <button
             onClick={onClose}
-            className="w-9 h-9 rounded-xl bg-[#141B26] hover:bg-[#1E2838] border border-[#222E40] text-[#8B949E] hover:text-white flex items-center justify-center transition-colors cursor-pointer"
+            className="w-9 h-9 rounded-xl bg-[#171D27] hover:bg-[#1E2533] border border-[#232B3B] text-[#8B949E] hover:text-white flex items-center justify-center transition-colors cursor-pointer"
           >
             ✕
           </button>
@@ -217,7 +217,7 @@ export const AiqxSlotModal: FC<AiqxSlotModalProps> = ({
         <div className="flex-1 overflow-y-auto p-5 sm:p-6 space-y-6">
           {/* Key Metrics Strip */}
           <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-            <div className="p-3.5 rounded-2xl bg-[#0E131C] border border-[#1A2332]">
+            <div className="p-3.5 rounded-xl bg-[#0B0E11] border border-[#1E2533]">
               <div className="flex items-center justify-between text-[#8B949E] text-[11px]">
                 <span>Total Level Cost</span>
                 <Coins className="w-3.5 h-3.5 text-[#F5A623]" />
@@ -230,7 +230,7 @@ export const AiqxSlotModal: FC<AiqxSlotModalProps> = ({
               </span>
             </div>
 
-            <div className="p-3.5 rounded-2xl bg-[#0E131C] border border-[#1A2332]">
+            <div className="p-3.5 rounded-xl bg-[#0B0E11] border border-[#1E2533]">
               <div className="flex items-center justify-between text-[#8B949E] text-[11px]">
                 <span>Total Earned</span>
                 <Sparkles className="w-3.5 h-3.5 text-emerald-400" />
